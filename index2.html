@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式矢量与张量分析参考手册</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMVIhbGKLCePo231CVQSHcNsdMv3jgDR5o8344hiZnm5utfYM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A responsive, two-column layout. The left column is a fixed sidebar for hierarchical navigation, allowing users to quickly jump between core topics (Vector Basics, Tensors, Coordinate Systems). The right, main content area is dynamic. It uses interactive tabs and dropdown selectors to display specific information, preventing long scrolls. For example, a dropdown will allow users to select a coordinate system, and the view will instantly update to show all relevant formulas for that system. This task-oriented design transforms the linear report into a non-linear, user-driven reference tool, prioritizing quick access and comparison over sequential reading. -->
+    <!-- Visualization & Content Choices: Report Info: Mathematical formulas and definitions. Goal: Inform, Compare, Organize. Viz/Presentation Method: Cleanly structured text blocks, cards, and beautifully rendered mathematical formulas using the KaTeX library. No data charts are needed. Interaction: The primary interactions are a sidebar navigation menu, content tabs, and a dropdown selector for coordinate systems. This allows users to filter and view content dynamically. Justification: This approach is ideal for dense, formula-heavy reference material. It breaks down complexity into manageable, user-selected chunks, making the information highly accessible. Library/Method: Vanilla JavaScript for DOM manipulation and state management, Tailwind CSS for styling, and KaTeX for LaTeX rendering. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            background-color: #FDFBF7;
+            color: #3a3a3a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active {
+            background-color: #EFEBE5;
+            color: #1a1a1a;
+            border-left-color: #D4A276;
+        }
+        .nav-link:hover {
+            background-color: #F5F1EC;
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            color: #D4A276;
+            border-bottom-color: #D4A276;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3csvg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body class="antialiased">
+   
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-64 lg:w-72 bg-white/80 backdrop-blur-sm border-r border-gray-200/80 p-4 md:p-6 flex-shrink-0">
+            <h1 class="text-xl font-bold text-gray-800 mb-6">矢量与张量分析</h1>
+            <nav id="main-nav" class="space-y-2">
+                <a href="#home" class="nav-link block p-3 rounded-lg font-medium text-gray-700">主页</a>
+                <a href="2.html" class="nav-link block p-3 rounded-lg font-medium text-gray-700">热力学量及其导数</a>
+                <a href="3.html" class="nav-link block p-3 rounded-lg font-medium text-gray-700">复变函数交互式探索指南</a>
+                <div>
+                    <h2 class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">矢量分析</h2>
+                    <a href="#vector-basics" class="nav-link block p-3 rounded-lg font-medium text-gray-700">基本概念与代数</a>
+                    <a href="#vector-operators" class="nav-link block p-3 rounded-lg font-medium text-gray-700">微分算子</a>
+                    <a href="#vector-identities" class="nav-link block p-3 rounded-lg font-medium text-gray-700">重要恒等式</a>
+                    <a href="#integral-theorems" class="nav-link block p-3 rounded-lg font-medium text-gray-700">积分定理</a>
+                </div>
+                <div>
+                    <h2 class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">张量分析</h2>
+                    <a href="#tensor-basics" class="nav-link block p-3 rounded-lg font-medium text-gray-700">定义与分类</a>
+                    <a href="#tensor-ops" class="nav-link block p-3 rounded-lg font-medium text-gray-700">基本运算</a>
+                    <a href="#important-tensors" class="nav-link block p-3 rounded-lg font-medium text-gray-700">重要张量</a>
+                </div>
+                 <div>
+                    <h2 class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">坐标系与算子</h2>
+                    <a href="#coords-general" class="nav-link block p-3 rounded-lg font-medium text-gray-700">协变微分</a>
+                    <a href="#coords-specific" class="nav-link block p-3 rounded-lg font-medium text-gray-700">常用坐标系算子</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 lg:p-10 overflow-y-auto">
+            
+            <!-- Home Section -->
+            <section id="home" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">欢迎使用交互式矢量与张量分析参考手册</h2>
+                    <p class="text-lg text-gray-600 mb-4">
+                        本应用旨在将复杂的矢量与张量分析理论，通过现代化、交互式的界面呈现给您。无论您是学生、研究人员还是工程师，都可以在这里快速查找、理解和比较关键的公式、定理和概念。
+                    </p>
+                    <p class="text-gray-600">
+                        请使用左侧的导航菜单开始探索。您可以深入了解矢量的基本运算，研究张量的变换规律，或直接在不同坐标系之间切换，查看梯度、散度、旋度等算子的具体表达式。本工具的目标是成为您在物理和工程计算中不可或缺的伙伴。
+                    </p>
+                </div>
+            </section>
+
+            <!-- Vector Basics Section -->
+            <section id="vector-basics" class="content-section">
+                 <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">矢量基本概念与代数</h2>
+                    <p class="text-gray-600 mb-6">本节介绍了矢量分析的基础，包括标量、矢量和场的定义，以及它们之间的基本代数运算。这些是理解更高级微分和积分概念的基石。</p>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-bold text-lg">基本定义</h3>
+                            <p><strong>标量:</strong> 只有大小没有方向的量 (如温度 $T$、质量 $m$)。</p>
+                            <p><strong>矢量:</strong> 既有大小又有方向的量 (如力 $\mathbf{F}$、速度 $\mathbf{v}$)。</p>
+                            <p><strong>矢量场:</strong> 空间中每个点都对应一个矢量的函数，如 $\mathbf{E}(x,y,z)$。</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">矢量代数</h3>
+                            <p><strong>点积 (内积):</strong> $\mathbf{A} \cdot \mathbf{B} = |\mathbf{A}||\mathbf{B}|\cos\theta = A_i B_i$</p>
+                            <p><strong>叉积 (矢量积):</strong> $(\mathbf{A} \times \mathbf{B})_i = \epsilon_{ijk}A_j B_k$</p>
+                            <p><strong>标量三重积:</strong> $\mathbf{A} \cdot (\mathbf{B} \times \mathbf{C}) = \det(\mathbf{A}, \mathbf{B}, \mathbf{C})$</p>
+                            <p><strong>矢量三重积:</strong> $\mathbf{A} \times (\mathbf{B} \times \mathbf{C}) = \mathbf{B}(\mathbf{A} \cdot \mathbf{C}) - \mathbf{C}(\mathbf{A} \cdot \mathbf{B})$</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vector Operators Section -->
+            <section id="vector-operators" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">矢量微分算子</h2>
+                    <p class="text-gray-600 mb-6">微分算子是描述场在空间中如何变化的核心工具。这里我们介绍在笛卡尔坐标系下的梯度、散度、旋度和拉普拉斯算子。请注意，这些表达式在其他坐标系中会有所不同。</p>
+                    <div>
+                        <h3 class="font-bold text-lg">Nabla 算子 ($\nabla$)</h3>
+                        <p>在笛卡尔坐标系中，$\nabla$ 算子定义为：</p>
+                        <div class="katex-display">$\nabla = \mathbf{i}\frac{\partial}{\partial x} + \mathbf{j}\frac{\partial}{\partial y} + \mathbf{k}\frac{\partial}{\partial z}$</div>
+                    </div>
+                    <div class="mt-6 space-y-4">
+                        <h3 class="font-bold text-lg">主要算子</h3>
+                        <p><strong>梯度 (Gradient):</strong> 作用于标量场 $\phi$，得到一个矢量场，指向 $\phi$ 增长最快的方向。</p>
+                        <div class="katex-display">$\nabla \phi = \frac{\partial \phi}{\partial x}\mathbf{i} + \frac{\partial \phi}{\partial y}\mathbf{j} + \frac{\partial \phi}{\partial z}\mathbf{k}$</div>
+                        <p><strong>散度 (Divergence):</strong> 作用于矢量场 $\mathbf{F}$，得到一个标量场，衡量场的源或汇的强度。</p>
+                        <div class="katex-display">$\nabla \cdot \mathbf{F} = \frac{\partial F_x}{\partial x} + \frac{\partial F_y}{\partial y} + \frac{\partial F_z}{\partial z}$</div>
+                        <p><strong>旋度 (Curl):</strong> 作用于矢量场 $\mathbf{F}$，得到一个矢量场，描述场的旋转或涡量。</p>
+                        <div class="katex-display">$\nabla \times \mathbf{F} = \begin{vmatrix} \mathbf{i} & \mathbf{j} & \mathbf{k} \\ \frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z} \\ F_x & F_y & F_z \end{vmatrix}$</div>
+                        <p><strong>拉普拉斯算子 (Laplacian):</strong> 一个二阶算子，$\nabla^2 \phi = \nabla \cdot (\nabla \phi)$。</p>
+                        <div class="katex-display">$\nabla^2 \phi = \frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} + \frac{\partial^2 \phi}{\partial z^2}$</div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Vector Identities Section -->
+            <section id="vector-identities" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">重要矢量恒等式</h2>
+                    <p class="text-gray-600 mb-6">矢量恒等式是在进行矢量运算推导时非常有用的工具，它们可以简化复杂的表达式，并揭示不同算子之间的深刻联系。</p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-bold text-lg mb-2">乘积法则</h3>
+                            <p>$\nabla(fg) = f\nabla g + g\nabla f$</p>
+                            <p>$\nabla \cdot (f\mathbf{A}) = f(\nabla \cdot \mathbf{A}) + \mathbf{A} \cdot \nabla f$</p>
+                            <p>$\nabla \times (f\mathbf{A}) = f(\nabla \times \mathbf{A}) - \mathbf{A} \times (\nabla f)$</p>
+                            <p>$\nabla \cdot (\mathbf{A} \times \mathbf{B}) = \mathbf{B} \cdot (\nabla \times \mathbf{A}) - \mathbf{A} \cdot (\nabla \times \mathbf{B})$</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg mb-2">二阶导数</h3>
+                            <p class="font-semibold text-green-700">梯度的旋度为零:</p>
+                            <p>$\nabla \times (\nabla \phi) = 0$</p>
+                            <p class="mt-4 font-semibold text-blue-700">旋度的散度为零:</p>
+                            <p>$\nabla \cdot (\nabla \times \mathbf{F}) = 0$</p>
+                            <p class="mt-4 font-semibold text-purple-700">旋度的旋度:</p>
+                            <p>$\nabla \times (\nabla \times \mathbf{A}) = \nabla(\nabla \cdot \mathbf{A}) - \nabla^2 \mathbf{A}$</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Integral Theorems Section -->
+            <section id="integral-theorems" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">积分定理</h2>
+                    <p class="text-gray-600 mb-6">积分定理建立了微分形式和积分形式之间的桥梁，将一个区域内的场的变化（微分）与其边界上的场的行为（积分）联系起来，在物理学中有极其重要的应用。</p>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-bold text-lg">高斯散度定理 (Divergence Theorem)</h3>
+                            <p>将体积V内散度的体积分，与包围该体积的闭合曲面S上的通量联系起来。</p>
+                            <div class="katex-display">$\int_V (\nabla \cdot \mathbf{F}) dV = \oint_S \mathbf{F} \cdot d\mathbf{S}$</div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">斯托克斯定理 (Stokes' Theorem)</h3>
+                            <p>将开放曲面S上旋度的面积分，与该曲面的边界闭合曲线C上的环量联系起来。</p>
+                            <div class="katex-display">$\int_S (\nabla \times \mathbf{F}) \cdot d\mathbf{S} = \oint_C \mathbf{F} \cdot d\mathbf{l}$</div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">格林定理 (Green's Theorem)</h3>
+                            <p>斯托克斯定理在二维平面上的特例。</p>
+                            <div class="katex-display">$\iint_D \left(\frac{\partial M}{\partial x} - \frac{\partial L}{\partial y}\right) dA = \oint_C (L dx + M dy)$</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tensor Basics Section -->
+            <section id="tensor-basics" class="content-section">
+                 <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">张量定义与分类</h2>
+                    <p class="text-gray-600 mb-6">张量是标量和矢量的推广，是描述物理量在不同坐标系下如何变换的数学工具。张量的核心在于其变换法则，这保证了物理定律的普适性。</p>
+                    <div class="space-y-4">
+                        <p><strong>张量:</strong> 一个多重线性映射，其分量在坐标变换下遵循特定规则。</p>
+                        <p><strong>秩 (Rank):</strong> 张量所带指标的数量。0阶为标量，1阶为矢量。</p>
+                        <p><strong>逆变与协变:</strong></p>
+                        <ul class="list-disc list-inside ml-4">
+                            <li><strong>逆变分量 (Contravariant):</strong> 用上标记，如 $v^i$。</li>
+                            <li><strong>协变分量 (Covariant):</strong> 用下标记，如 $v_i$。</li>
+                        </ul>
+                        <h3 class="font-bold text-lg mt-4">变换定律</h3>
+                        <p>从坐标系 $x^i$ 变换到 $y^\alpha$:</p>
+                        <p>逆变矢量: $v'^\alpha = \frac{\partial y^\alpha}{\partial x^i} v^i$</p>
+                        <p>协变矢量: $w'_\alpha = \frac{\partial x^i}{\partial y^\alpha} w_i$</p>
+                        <p>二阶混合张量: $T'^\beta_\alpha = \frac{\partial y^\beta}{\partial x^j} \frac{\partial x^i}{\partial y^\alpha} T^j_i$</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tensor Ops Section -->
+            <section id="tensor-ops" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">张量基本运算</h2>
+                    <p class="text-gray-600 mb-6">张量有一套代数运算规则，用于组合和操作张量，从而构建复杂的物理方程。</p>
+                    <div class="space-y-4">
+                        <p><strong>加法:</strong> 只有同秩同类型的张量才能相加。 $(S+T)_{\mu\nu} = S_{\mu\nu} + T_{\mu\nu}$</p>
+                        <p><strong>外积 (Outer Product):</strong> 产生一个更高阶的张量。$s^\mu_\nu = x^\mu y_\nu$</p>
+                        <p><strong>收缩 (Contraction):</strong> 对一个上标和一个下标求和，使张量降阶。例如， $T^\alpha_\alpha$ 是一个标量 (迹)。</p>
+                        <p><strong>升降指标:</strong> 使用度量张量 $g_{ij}$ 及其逆 $g^{ij}$ 来转换分量的协变和逆变性质。</p>
+                        <p>$v_i = g_{ij} v^j$ (降指标)</p>
+                        <p>$v^i = g^{ij} v_j$ (升指标)</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Important Tensors Section -->
+            <section id="important-tensors" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">重要张量</h2>
+                    <p class="text-gray-600 mb-6">在物理和工程中，一些特殊的张量扮演着至关重要的角色。</p>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-bold text-lg">度量张量 (Metric Tensor) $g_{\mu\nu}$</h3>
+                            <p>定义了空间的几何结构，如距离和角度。用于升降指标和计算内积 $s = g_{\mu\nu}x^\mu y^\nu$。</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">克罗内克符号 (Kronecker Delta) $\delta_{ij}$</h3>
+                            <p>一个二阶单位张量，在笛卡尔坐标系下是单位矩阵。$\delta_{ij} = 1$ (若 $i=j$), $0$ (若 $i \neq j$)</p>
+                        </div>
+                         <div>
+                            <h3 class="font-bold text-lg">列维-奇维塔符号 (Levi-Civita Symbol) $\epsilon_{ijk}$</h3>
+                            <p>一个三阶完全反对称张量，用于定义叉积和行列式。</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">其他物理张量</h3>
+                            <p><strong>应力张量 $\sigma_{ij}$</strong> 和 <strong>应变张量 $\epsilon_{ij}$</strong> (连续介质力学)，<strong>电磁场张量 $F_{\mu\nu}$</strong> (相对论电动力学)。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Coords General Section -->
+            <section id="coords-general" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">协变微分</h2>
+                    <p class="text-gray-600 mb-6">在弯曲的坐标系中，基矢量本身会随位置变化，因此普通的偏导数不再是张量。协变导数通过引入克里斯托费尔符号来修正这一点，确保求导结果仍然是张量。</p>
+                     <div class="space-y-4">
+                        <div>
+                            <h3 class="font-bold text-lg">克里斯托费尔符号 (Christoffel Symbols) $\Gamma^\alpha_{\mu\nu}$</h3>
+                            <p>描述了基矢量如何随坐标变化，由度量张量 $g_{\mu\nu}$ 的导数计算得出。</p>
+                            <div class="katex-display">$\Gamma^\alpha_{\mu\nu} = \frac{1}{2} g^{\alpha\beta} \left( \frac{\partial g_{\beta\nu}}{\partial x^\mu} + \frac{\partial g_{\beta\mu}}{\partial x^\nu} - \frac{\partial g_{\mu\nu}}{\partial x^\beta} \right)$</div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">协变导数 $\nabla_\mu$</h3>
+                            <p>对逆变矢量 $v^\alpha$:</p>
+                            <div class="katex-display">$\nabla_\mu v^\alpha = \partial_\mu v^\alpha + \Gamma^\alpha_{\mu\nu}v^\nu$</div>
+                             <p>对协变矢量 $w_\alpha$:</p>
+                            <div class="katex-display">$\nabla_\mu w_\alpha = \partial_\mu w_\alpha - \Gamma^\nu_{\mu\alpha}w_\nu$</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Coords Specific Section -->
+            <section id="coords-specific" class="content-section">
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">常用坐标系下的算子</h2>
+                    <p class="text-gray-600 mb-6">微分算子在不同坐标系下有不同的表达式。以下是笛卡尔、柱面和球面坐标系下的梯度、散度、旋度和拉普拉斯算子。</p>
+
+                    <!-- 笛卡尔坐标系 -->
+                    <div class="mb-8">
+                        <h3 class="font-bold text-xl text-gray-700 mb-4">笛卡尔坐标系 (x, y, z)</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-bold text-lg">梯度 (Gradient)</h4>
+                                <div class="katex-display">$\nabla \phi = \frac{\partial \phi}{\partial x}\mathbf{i} + \frac{\partial \phi}{\partial y}\mathbf{j} + \frac{\partial \phi}{\partial z}\mathbf{k}$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">散度 (Divergence)</h4>
+                                <div class="katex-display">$\nabla \cdot \mathbf{F} = \frac{\partial F_x}{\partial x} + \frac{\partial F_y}{\partial y} + \frac{\partial F_z}{\partial z}$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">旋度 (Curl)</h4>
+                                <div class="katex-display">$\nabla \times \mathbf{F} = \left(\frac{\partial F_z}{\partial y} - \frac{\partial F_y}{\partial z}\right)\mathbf{i} + \left(\frac{\partial F_x}{\partial z} - \frac{\partial F_z}{\partial x}\right)\mathbf{j} + \left(\frac{\partial F_y}{\partial x} - \frac{\partial F_x}{\partial y}\right)\mathbf{k}$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">拉普拉斯算子 (Laplacian)</h4>
+                                <div class="katex-display">$\nabla^2 \phi = \frac{\partial^2 \phi}{\partial x^2} + \frac{\partial^2 \phi}{\partial y^2} + \frac{\partial^2 \phi}{\partial z^2}$</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 柱面坐标系 -->
+                    <div class="mb-8">
+                        <h3 class="font-bold text-xl text-gray-700 mb-4">柱面坐标系 (r, θ, z)</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-bold text-lg">梯度 (Gradient)</h4>
+                                <div class="katex-display">$\nabla F = \frac{\partial F}{\partial r}\mathbf{e}_r + \frac{1}{r}\frac{\partial F}{\partial \theta}\mathbf{e}_\theta + \frac{\partial F}{\partial z}\mathbf{e}_z$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">散度 (Divergence)</h4>
+                                <div class="katex-display">$\nabla \cdot \mathbf{f} = \frac{1}{r}\frac{\partial}{\partial r}(r f_r) + \frac{1}{r}\frac{\partial f_\theta}{\partial \theta} + \frac{\partial f_z}{\partial z}$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">旋度 (Curl)</h4>
+                                <div class="katex-display">$\nabla \times \mathbf{f} = \left(\frac{1}{r}\frac{\partial f_z}{\partial \theta} - \frac{\partial f_\theta}{\partial z}\right)\mathbf{e}_r + \left(\frac{\partial f_r}{\partial z} - \frac{\partial f_z}{\partial r}\right)\mathbf{e}_\theta + \frac{1}{r}\left(\frac{\partial}{\partial r}(r f_\theta) - \frac{\partial f_r}{\partial \theta}\right)\mathbf{e}_z$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">拉普拉斯算子 (Laplacian)</h4>
+                                <div class="katex-display">$\Delta F = \frac{1}{r}\frac{\partial}{\partial r}\left(r\frac{\partial F}{\partial r}\right) + \frac{1}{r^2}\frac{\partial^2 F}{\partial \theta^2} + \frac{\partial^2 F}{\partial z^2}$</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 球面坐标系 -->
+                    <div class="mb-8">
+                        <h3 class="font-bold text-xl text-gray-700 mb-4">球面坐标系 (ρ, θ, φ)</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-bold text-lg">梯度 (Gradient)</h4>
+                                <div class="katex-display">$\nabla F = \frac{\partial F}{\partial \rho}\mathbf{e}_\rho + \frac{1}{\rho\sin\phi}\frac{\partial F}{\partial \theta}\mathbf{e}_\theta + \frac{1}{\rho}\frac{\partial F}{\partial \phi}\mathbf{e}_\phi$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">散度 (Divergence)</h4>
+                                <div class="katex-display">$\nabla \cdot \mathbf{f} = \frac{1}{\rho^2}\frac{\partial}{\partial \rho}(\rho^2 f_\rho) + \frac{1}{\rho\sin\phi}\frac{\partial f_\theta}{\partial \theta} + \frac{1}{\rho\sin\phi}\frac{\partial}{\partial \phi}(\sin\phi f_\phi)$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">旋度 (Curl)</h4>
+                                <div class="katex-display">$\nabla \times \mathbf{f} = \frac{1}{\rho\sin\phi}\left(\frac{\partial}{\partial \phi}(\sin\phi f_\theta) - \frac{\partial f_\phi}{\partial \theta}\right)\mathbf{e}_\rho + \frac{1}{\rho}\left(\frac{1}{\sin\phi}\frac{\partial f_\rho}{\partial \theta} - \frac{\partial}{\partial \rho}(\rho f_\theta)\right)\mathbf{e}_\phi + \frac{1}{\rho}\left(\frac{\partial}{\partial \rho}(\rho f_\phi) - \frac{\partial f_\rho}{\partial \phi}\right)\mathbf{e}_\theta$</div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">拉普拉斯算子 (Laplacian)</h4>
+                                <div class="katex-display">$\Delta F = \frac{1}{\rho^2}\frac{\partial}{\partial \rho}\left(\rho^2\frac{\partial F}{\partial \rho}\right) + \frac{1}{\rho^2\sin^2\phi}\frac{\partial^2 F}{\partial \theta^2} + \frac{1}{\rho^2\sin\phi}\frac{\partial}{\partial \phi}\left(\sin\phi\frac{\partial F}{\partial \phi}\right)$</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    function navigate() {
+        const hash = window.location.hash || '#home';
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === hash) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        contentSections.forEach(section => {
+            if ('#' + section.id === hash) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+    }
+
+    window.addEventListener('hashchange', navigate);
+
+    // Initial setup
+    navigate();
+
+    // Initial rendering of all math in the document after DOM is loaded
+    if (window.renderMathInElement) {
+        window.renderMathInElement(document.body, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false},
+                {left: "\\(", right: "\\)", display: false},
+                {left: "\\[", right: "\\]", display: true}
+            ],
+            throwOnError: false
+        });
+    }
+});
+</script>
+
+</body>
+</html>

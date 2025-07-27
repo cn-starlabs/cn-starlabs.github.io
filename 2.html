@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式热力学关系浏览器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Slate/Stone neutrals with Teal accent) -->
+    <!-- Application Structure Plan: A multi-section SPA with sidebar navigation (Overview, Potentials, Maxwell, Coefficients, Derivator, Full Report). This non-linear structure allows users to explore topics based on their needs, moving from fundamentals to advanced tools. It's more engaging and functional than a linear report, transforming a reference document into an interactive study tool. -->
+    <!-- Visualization & Content Choices: Potentials -> Interactive Diagram (HTML/CSS) -> Goal: Organize/Inform -> JS updates details on click. Maxwell Relations -> Visual Derivation from Diagram -> Goal: Explain -> JS shows step-by-step logic. Coefficients -> Interactive Cards & Bar Chart (Chart.js) -> Goal: Compare/Inform -> JS toggles details, Chart.js visualizes Cp>Cv. Derivator -> Rule-based tool -> Goal: Synthesize/Tool -> JS logic derives relations. Full Report -> Static text content from original report, formatted for readability. This approach uses interaction to clarify complex relationships. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .katex-frac .numerator {
+            text-align: center;
+        }
+
+        .katex-frac .denominator {
+            text-align: center;
+        }
+
+        .katex-frac .frac-line {
+            border-top: 1px solid currentColor;
+            margin: 0.2em 0;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .nav-link.active {
+            background-color: #0d9488;
+            color: white;
+        }
+
+        .nav-link:not(.active):hover {
+            background-color: #f0fdfa;
+            color: #115e59;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .potential-node {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .potential-node.active {
+            border-color: #0d9488;
+            transform: scale(1.05);
+            box-shadow: 0 4px 14px 0 rgba(13, 148, 136, 0.3);
+        }
+
+        .coeff-card {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .coeff-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .derivation-step {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Table styles for the full report section */
+        .full-report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .full-report-table th,
+        .full-report-table td {
+            border: 1px solid #e2e8f0;
+            /* slate-200 */
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .full-report-table th {
+            background-color: #f8fafc;
+            /* slate-50 */
+            font-weight: 600;
+            color: #1e293b;
+            /* slate-800 */
+        }
+
+        .full-report-table tbody tr:nth-child(odd) {
+            background-color: #f8fafc;
+            /* slate-50 */
+        }
+
+        .full-report-table tbody tr:hover {
+            background-color: #f0fdfa;
+            /* teal-50 */
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <nav class="bg-white md:w-64 p-4 md:p-6 shadow-md md:shadow-lg flex-shrink-0">
+            <h1 class="text-2xl font-bold text-teal-700 mb-8">热力学导航</h1>
+            <ul class="space-y-2">
+                <li><a href="#potentials"
+                        class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">热力学势</a></li>
+                <li><a href="#maxwell"
+                        class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">麦克斯韦关系</a></li>
+                <li><a href="#coefficients"
+                        class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">关键系数</a></li>
+                <li><a href="#deriver"
+                        class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">关系推导器</a></li>
+                <li><a href="#full-report"
+                        class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">完整报告</a></li>
+                <li><a href="index.html" " class=" nav-link2 block w-full text-left px-4 py-2 rounded-lg
+                        font-medium">个人主页</a></li>
+                </p>
+                <a id="cy-effective-orcid-url" class="underline" href="https://orcid.org/0009-0007-2600-0948"
+                    target="orcid.widget" rel="me noopener noreferrer" style="vertical-align: top">
+                    <img src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
+                        style="width: 1em; margin-inline-start: 0.5em" alt="ORCID iD icon" />
+                    <!-- https://orcid.org/0009-0007-2600-0948 -->
+                </a>
+            </ul>
+        </nav>
+
+        <main class="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
+
+            <section id="potentials" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">热力学势函数</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">
+                    热力学势是描述系统状态的标量函数。通过对这些势函数求其自然变量的偏导数，可以推导出系统的所有热力学性质。下方是一个交互式关系图，点击不同的热力学势（U, H, F, G）来查看其详细信息和基本方程。
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center">
+                        <div class="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg"
+                            data-potential="F">
+                            <span class="text-2xl font-bold">F</span>
+                        </div>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg"
+                            data-potential="U">
+                            <span class="text-2xl font-bold">U</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg"
+                            data-potential="G">
+                            <span class="text-2xl font-bold">G</span>
+                        </div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg"
+                            data-potential="H">
+                            <span class="text-2xl font-bold">H</span>
+                        </div>
+                        <div class="text-center text-slate-500">
+                            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 text-xl font-semibold">S</div>
+                            <div class="absolute top-1/2 left-1/4 -translate-y-1/2 text-xl font-semibold">V</div>
+                            <div class="absolute top-1/2 right-1/4 -translate-y-1/2 text-xl font-semibold">P</div>
+                            <div class="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-xl font-semibold">T</div>
+                        </div>
+                    </div>
+
+                    <div id="potential-details" class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                        <h3 id="potential-name" class="text-3xl font-bold text-teal-700 mb-4">选择一个势函数</h3>
+                        <div id="potential-content" class="space-y-4 text-slate-700">
+                            <p>点击左侧图中的 U, H, F, 或 G 来查看详情。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="maxwell" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">麦克斯韦关系</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">
+                    麦克斯韦关系源于热力学势的全微分性质，揭示了不同热力学量偏导数之间的内在联系。它们是连接可测量与不可测量量的桥梁。点击下方的热力学势，查看对应的麦克斯韦关系及其推导过程。</p>
+                <div class="flex flex-wrap gap-4 mb-8">
+                    <button
+                        class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition"
+                        data-potential="U">源于 U</button>
+                    <button
+                        class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition"
+                        data-potential="H">源于 H</button>
+                    <button
+                        class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition"
+                        data-potential="F">源于 F</button>
+                    <button
+                        class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition"
+                        data-potential="G">源于 G</button>
+                </div>
+                <div id="maxwell-details"
+                    class="bg-white p-6 rounded-xl shadow-lg border border-slate-200 min-h-[200px]">
+                    <p class="text-slate-600">请选择一个源势函数来查看对应的麦克斯韦关系。</p>
+                </div>
+            </section>
+
+            <section id="coefficients" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">关键热力学系数</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">
+                    热力学系数是表征物质宏观性质的可测量物理量，如热容、压缩率和热膨胀系数。它们之间存在着深刻的联系，这些联系同样由热力学基本定律决定。</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">热容 C<sub>p</sub> & C<sub>v</sub></h3>
+                        <p class="text-slate-600 mb-4">衡量物质升高单位温度所需吸收的热量。</p>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>C<sub>p</sub> (定压热容):</strong> (∂H/∂T)<sub>P</sub></p>
+                            <p><strong>C<sub>v</sub> (定容热容):</strong> (∂U/∂T)<sub>V</sub></p>
+                            <p class="font-semibold mt-2">通用关系:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">C<sub>p</sub> - C<sub>v</sub> = T V α² /
+                                κ<sub>T</sub></div>
+                        </div>
+                        <div class="chart-container relative w-full h-48 mt-4"><canvas id="heatCapacityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">热膨胀系数 α</h3>
+                        <p class="text-slate-600 mb-4">衡量物质体积随温度变化的敏感度。</p>
+                        <div class="space-y-2 text-sm">
+                            <p class="font-semibold">定义:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">α = (1/V) (∂V/∂T)<sub>P</sub></div>
+                            <p class="mt-2 text-slate-500">对于大多数物质 α > 0 (热胀冷缩)，但水在0-4°C时例外。</p>
+                        </div>
+                    </div>
+                    <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">等温压缩率 κ<sub>T</sub></h3>
+                        <p class="text-slate-600 mb-4">衡量物质体积随压力变化的敏感度。</p>
+                        <div class="space-y-2 text-sm">
+                            <p class="font-semibold">定义:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">κ<sub>T</sub> = - (1/V)
+                                (∂V/∂P)<sub>T</sub></div>
+                            <p class="mt-2 text-slate-500">κ<sub>T</sub> > 0 是力学稳定性的必要条件。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="deriver" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">关系推导器</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">这是一个简化工具，用于演示如何将一个难以测量的偏导数（如熵的导数）转换为由可测量的物理量（P, V, T,
+                    C<sub>p</sub>, α, κ<sub>T</sub>）表示。选择一个目标导数，查看其推导过程。</p>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <div class="flex flex-wrap items-center gap-4 mb-6">
+                        <label for="derivative-select" class="font-semibold text-lg">选择要推导的量:</label>
+                        <select id="derivative-select"
+                            class="p-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="dSp"> (∂S/∂P)<sub>T</sub> </option>
+                            <option value="dSv"> (∂S/∂V)<sub>T</sub> </option>
+                            <option value="dUp"> (∂U/∂P)<sub>T</sub> </option>
+                            <option value="dUv"> (∂U/∂V)<sub>T</sub> </option>
+                        </select>
+                        <button id="derive-btn"
+                            class="px-6 py-2 bg-teal-600 text-white font-semibold rounded-full hover:bg-teal-700 transition">开始推导</button>
+                    </div>
+                    <div id="derivation-output" class="mt-4 space-y-3">
+                        <p class="text-slate-500">推导步骤将显示在这里。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="full-report" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">热力学量及其各阶导数的完整关系式</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">本节提供了热力学量及其各阶导数的完整详细报告。您可以滚动查阅所有内容，深入理解热力学理论的方方面面。</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200 prose max-w-none">
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">I. 热力学量与热力学势导论</h3>
+                    <p class="text-slate-700 mb-4">
+                        热力学作为研究能量、热和功之间关系的科学，通过状态函数描述宏观系统的行为。状态函数是其值仅取决于系统当前状态而与达到该状态的路径无关的性质。常见的状态函数包括内能（U）、熵（S）、压力（P）、体积（V）和温度（T）。热力学势是特定的状态函数，当用其“自然变量”表示时，它们包含了推导系统所有其他热力学性质所需的所有信息，这通过对热力学势进行偏微分来实现。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">内能（U）：基本热力学势</h4>
+                    <p class="text-slate-700 mb-2">
+                        内能（U）代表热力学系统内部所包含的总能量，包括其组成原子和分子的动能和势能。它是最基本的状态函数。内能的自然变量是熵（S）、体积（V）和粒子数（N）或摩尔数（{ni}）。如果已知系统函数
+                        U(S, V, N)，则可以通过对 U 进行微分来获得系统的所有其他热力学性质。</p>
+                    <p class="text-slate-700 mb-2">
+                        热力学第一定律是能量守恒原理在涉及热传递（Q）和功（W）的系统中的应用。它指出，系统内能（ΔU）的变化等于进入系统的净热量减去系统对外做的净功：ΔU = Q - W。符号约定至关重要：正 Q
+                        表示热量进入系统，正 W 表示系统对外做功。</p>
+                    <p class="text-slate-700 mb-4">对于封闭系统中的可逆过程，热力学第一定律的微分形式为 dU = đQ<sub>rev</sub> -
+                        đW<sub>rev</sub>。根据熵的定义，dS = đQ<sub>rev</sub>/T，因此 đQ<sub>rev</sub> = TdS。对于机械功，đW<sub>rev</sub>
+                        = PdV。将这些代入第一定律，得到封闭系统的基本热力学方程：dU = TdS - PdV。对于粒子数可变的开放系统，此方程扩展为 dU = TdS - PdV +
+                        Σμ<sub>i</sub>dn<sub>i</sub>，其中 μ<sub>i</sub> 是物种 i 的化学势，dn<sub>i</sub> 是物种 i 摩尔数的变化。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">焓（H）：定义与自然变量</h4>
+                    <p class="text-slate-700 mb-4">焓（H）定义为 H = U +
+                        PV。它在恒压过程中特别有用，这在化学和生物系统中很常见。焓是通过勒让德变换从内能导出的，该变换有效地将独立变量从体积（V）转换为压力（P）。其自然变量是熵（S）、压力（P）和粒子数（N）。焓的微分形式为
+                        dH = TdS + VdP + μdN。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">亥姆霍兹自由能（F）：定义与自然变量</h4>
+                    <p class="text-slate-700 mb-4">亥姆霍兹自由能（F，通常表示为 A）定义为 F = U - TS。它适用于恒温恒容过程，例如在受控温度下的封闭容器中的过程。F
+                        也是通过勒让德变换从内能导出的，将熵（S）转换为温度（T）。其自然变量是温度（T）、体积（V）和粒子数（N）。这些变量通常比熵（S）更容易通过实验获得。亥姆霍兹自由能的微分形式为 dF =
+                        -SdT - PdV + μdN。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">吉布斯自由能（G）：定义与自然变量</h4>
+                    <p class="text-slate-700 mb-4">吉布斯自由能（G）定义为 G = H - TS = U + PV -
+                        TS。它是在恒温恒压条件下最常用的热力学势，这是实验室中化学反应的典型条件。G 可以通过对 U 进行两次连续的勒让德变换（S 转换为 T，V 转换为 P），或者通过对 H
+                        进行一次勒让德变换（S 转换为 T）来导出。其自然变量是温度（T）、压力（P）和粒子数（N）。吉布斯自由能的微分形式为 dG = -SdT + VdP + μdN。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">勒让德变换在热力学可访问性中的战略作用</h4>
+                    <p class="text-slate-700 mb-4">内能 U(S,V,N)
+                        被认为是热力学的“基本方程”或势，所有热力学性质都可以通过对其微分获得。然而，熵（S）作为自然变量，在实验室中很难精确控制。这种实验上的局限性促使了其他热力学势（如焓 H、亥姆霍兹自由能 F
+                        和吉布斯自由能 G）的推导。勒让德变换正是实现这一目标的关键机制。例如，焓 H = U + PV 将独立变量从体积 V 转换为压力 P，而亥姆霍兹自由能 F = U - TS 将熵 S
+                        转换为温度 T。吉布斯自由能 G 的自然变量是温度 T 和压力 P，这些变量在实验中更容易获取。</p>
+                    <p class="text-slate-700 mb-4">因此，勒让德变换不仅仅是数学上的定义，它们是连接理论基本方程（如
+                        U(S,V,N)）与实际实验条件之间的桥梁。通过系统地将广延变量（S、V）转换为其共轭的强度变量（T、P），这些变换创建了新的热力学势（H、F、G），它们的自然变量可以直接在实验室中测量和控制。这种方法使得整个热力学框架在实验上变得可行，对于预测和分析实际系统，特别是化学反应（吉布斯自由能）和相变，具有巨大的实用价值。这揭示了热力学设计的精妙之处，其潜在的数学结构直接促进了实验的实用性。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">表1：热力学势、自然变量和典型微分形式总结</h4>
+                    <table class="full-report-table">
+                        <thead>
+                            <tr>
+                                <th>热力学势名称</th>
+                                <th>符号</th>
+                                <th>定义</th>
+                                <th>自然变量</th>
+                                <th>典型微分形式（含化学势）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>内能</td>
+                                <td>U</td>
+                                <td>-</td>
+                                <td>S, V, N</td>
+                                <td>dU = TdS - PdV + Σμ<sub>i</sub>dn<sub>i</sub></td>
+                            </tr>
+                            <tr>
+                                <td>焓</td>
+                                <td>H</td>
+                                <td>U + PV</td>
+                                <td>S, P, N</td>
+                                <td>dH = TdS + VdP + Σμ<sub>i</sub>dn<sub>i</sub></td>
+                            </tr>
+                            <tr>
+                                <td>亥姆霍兹自由能</td>
+                                <td>F</td>
+                                <td>U - TS</td>
+                                <td>T, V, N</td>
+                                <td>dF = -SdT - PdV + Σμ<sub>i</sub>dn<sub>i</sub></td>
+                            </tr>
+                            <tr>
+                                <td>吉布斯自由能</td>
+                                <td>G</td>
+                                <td>H - TS = U + PV - TS</td>
+                                <td>T, P, N</td>
+                                <td>dG = -SdT + VdP + Σμ<sub>i</sub>dn<sub>i</sub></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4 mt-8">II. 一阶导数：热力学基本方程</h3>
+                    <p class="text-slate-700 mb-4">本节将详细阐述从热力学第一定律和第二定律导出的基本方程，这些方程定义了热力学势的一阶导数。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">热力学第一定律与内能变化</h4>
+                    <p class="text-slate-700 mb-4">
+                        热力学第一定律是能量守恒原理在涉及热传递（Q）和功（W）的系统中的应用。它指出，系统内能（ΔU）的变化等于进入系统的净热量减去系统对外做的净功：ΔU = Q - W。符号约定至关重要：正 Q
+                        表示热量进入系统，正 W 表示系统对外做功。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">结合第一定律和第二定律：推导与意义</h4>
+                    <p class="text-slate-700 mb-4">对于封闭系统中的可逆过程，热力学第一定律的微分形式为 dU = đQ<sub>rev</sub> -
+                        đW<sub>rev</sub>。根据熵的定义，dS = đQ<sub>rev</sub>/T，因此 đQ<sub>rev</sub> = TdS。对于机械功，đW<sub>rev</sub>
+                        = PdV。将这些代入第一定律，得到封闭系统的基本热力学方程：<strong>dU = TdS - PdV</strong>。</p>
+                    <p class="text-slate-700 mb-4">
+                        这个方程之所以“基本”，是因为它结合了能量守恒（第一定律）和熵（第二定律）的原理。尽管它最初是为可逆过程推导的，但由于它只涉及状态函数（U、S、V），其微分是全微分，因此它适用于可逆和不可逆过程。这意味着，无论过程路径如何，只要系统的初始和最终平衡态已知，内能的变化就可以通过这个精确的微分关系来计算。
+                    </p>
+                    <p class="text-slate-700 mb-4">从 dU = TdS - PdV，我们可以直接得到内能 U 对其自然变量的偏导数：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>温度：</strong> T = (∂U/∂S)<sub>V</sub></li>
+                        <li><strong>压力：</strong> -P = (∂U/∂V)<sub>S</sub></li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">全微分的路径无关性与预测能力</h4>
+                    <p class="text-slate-700 mb-4">热力学第一定律（ΔU = Q - W）中的热量 Q 和功 W 是路径依赖的量。然而，结合第一定律和第二定律得到的 dU = TdS -
+                        PdV 却适用于可逆和不可逆过程，因为其中只包含状态函数。这种差异的核心在于“全微分”的性质。一个微分是全微分，意味着其积分在两点之间是路径无关的。对于内能 U 以及其他热力学势 H、F、G
+                        而言，它们都是状态函数，因此它们的微分都是全微分。</p>
+                    <p class="text-slate-700 mb-4">
+                        这种全微分的性质直接导致了热力学基本方程的普遍适用性。这意味着，尽管实际过程（热量和功的交换方式）可能复杂且不可逆，但系统基本性质（如内能、熵、焓或自由能）的变化始终可以通过这些简单的、精确的微分关系来计算，只要初始和最终的平衡态已知。这极大地简化了热力学分析，使得无需详细了解系统所经历的复杂微观路径，就能对自发性、平衡和能量转换进行预测。它支撑了热力学通过少数几个状态变量对宏观行为进行强大预测的能力。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">焓、亥姆霍兹自由能和吉布斯自由能的微分形式</h4>
+                    <p class="text-slate-700 mb-2">这些微分形式是通过应用 H、F 和 G 的定义（作为 U 的勒让德变换）并代入基本微分 dU 推导出来的：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>焓（H）：</strong> 焓定义为 H = U + PV。对其进行微分：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dH = d(U + PV) = dU + PdV + VdP
+                            </div>
+                            将 dU = TdS - PdV 代入：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dH = (TdS - PdV) + PdV + VdP</div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>dH = TdS + VdP</strong>
+                            </div>
+                            从 dH = TdS + VdP，我们可以得到焓 H 对其自然变量的偏导数：
+                            <ul class="list-circle list-inside ml-4">
+                                <li><strong>温度：</strong> T = (∂H/∂S)<sub>P</sub></li>
+                                <li><strong>体积：</strong> V = (∂H/∂P)<sub>S</sub></li>
+                            </ul>
+                        </li>
+                        <li><strong>亥姆霍兹自由能（F）：</strong> 亥姆霍兹自由能定义为 F = U - TS。对其进行微分：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dF = d(U - TS) = dU - TdS - SdT
+                            </div>
+                            将 dU = TdS - PdV 代入：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dF = (TdS - PdV) - TdS - SdT</div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>dF = -SdT - PdV</strong>
+                            </div>
+                            从 dF = -SdT - PdV，我们可以得到亥姆霍兹自由能 F 对其自然变量的偏导数：
+                            <ul class="list-circle list-inside ml-4">
+                                <li><strong>熵：</strong> -S = (∂F/∂T)<sub>V</sub></li>
+                                <li><strong>压力：</strong> -P = (∂F/∂V)<sub>T</sub></li>
+                            </ul>
+                        </li>
+                        <li><strong>吉布斯自由能（G）：</strong> 吉布斯自由能定义为 G = H - TS = U + PV - TS。对其进行微分：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dG = d(H - TS) = dH - TdS - SdT
+                            </div>
+                            将 dH = TdS + VdP 代入：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">dG = (TdS + VdP) - TdS - SdT</div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>dG = -SdT + VdP</strong>
+                            </div>
+                            从 dG = -SdT + VdP，我们可以得到吉布斯自由能 G 对其自然变量的偏导数：
+                            <ul class="list-circle list-inside ml-4">
+                                <li><strong>熵：</strong> -S = (∂G/∂T)<sub>P</sub></li>
+                                <li><strong>体积：</strong> V = (∂G/∂P)<sub>T</sub></li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">化学势：开放系统的考量</h4>
+                    <p class="text-slate-700 mb-2">对于粒子数（或摩尔数）可以变化的系统，例如化学反应或开放系统，基本方程必须包含一个粒子传递项。物种 i
+                        的化学势（μ<sub>i</sub>）定义为在其他自然变量保持恒定的情况下，每单位摩尔数变化所引起的能量（或势）变化。</p>
+                    <p class="text-slate-700 mb-4">在开放系统中，内能的基本方程变为：<strong>dU = TdS - PdV +
+                            Σμ<sub>i</sub>dn<sub>i</sub></strong>。类似地，对于其他热力学势：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>dH = TdS + VdP + Σμ<sub>i</sub>dn<sub>i</sub></strong></li>
+                        <li><strong>dF = -SdT - PdV + Σμ<sub>i</sub>dn<sub>i</sub></strong></li>
+                        <li><strong>dG = -SdT + VdP + Σμ<sub>i</sub>dn<sub>i</sub></strong></li>
+                    </ul>
+                    <p class="text-slate-700 mb-4">化学势本身可以表示为一阶导数：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li>μ<sub>i</sub> = (∂U/∂n<sub>i</sub>)<sub>S,V,n<sub>j</sub>≠i</sub></li>
+                        <li>μ<sub>i</sub> = (∂H/∂n<sub>i</sub>)<sub>S,P,n<sub>j</sub>≠i</sub></li>
+                        <li>μ<sub>i</sub> = (∂F/∂n<sub>i</sub>)<sub>T,V,n<sub>j</sub>≠i</sub></li>
+                        <li>μ<sub>i</sub> = (∂G/∂n<sub>i</sub>)<sub>T,P,n<sub>j</sub>≠i</sub></li>
+                    </ul>
+
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4 mt-8">III. 二阶导数：麦克斯韦关系</h3>
+                    <p class="text-lg text-slate-600 mb-8 max-w-3xl">麦克斯韦关系是热力学势的二阶偏导数之间的关键关系，它们从全微分原理中导出。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">推导原理：全微分与二阶导数的对称性</h4>
+                    <p class="text-slate-700 mb-4">
+                        麦克斯韦关系是热力学中连接系统热力学性质的一组方程。它们源于热力学势（U、H、F、G）是状态函数的事实，这意味着它们的微分是全微分。对于任何全微分 dz = Mdx +
+                        Ndy，混合二阶偏导数是相等的：<strong>(∂M/∂y)<sub>x</sub> =
+                            (∂N/∂x)<sub>y</sub></strong>。这被称为欧拉互反关系或二阶导数的对称性。通过将此原理应用于 U、H、F 和 G 的微分形式，我们得到了麦克斯韦关系。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">典型麦克斯韦关系及其推导</h4>
+                    <p class="text-slate-700 mb-2">将全微分原理应用于每个热力学势，可以得到四个典型的麦克斯韦关系：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>从内能（U）导出：</strong>
+                            基本方程：dU = TdS - PdV
+                            这里，M = T，N = -P。
+                            应用欧拉互反关系 (∂M/∂V)<sub>S</sub> = (∂N/∂S)<sub>V</sub>：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">(∂T/∂V)<sub>S</sub> =
+                                (∂(-P)/∂S)<sub>V</sub></div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>因此，(∂T/∂V)<sub>S</sub> = -
+                                    (∂P/∂S)<sub>V</sub></strong></div>
+                        </li>
+                        <li><strong>从焓（H）导出：</strong>
+                            基本方程：dH = TdS + VdP
+                            这里，M = T，N = V。
+                            应用欧拉互反关系 (∂M/∂P)<sub>S</sub> = (∂N/∂S)<sub>P</sub>：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">(∂T/∂P)<sub>S</sub> =
+                                (∂V/∂S)<sub>P</sub></div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>因此，(∂T/∂P)<sub>S</sub> =
+                                    (∂V/∂S)<sub>P</sub></strong></div>
+                        </li>
+                        <li><strong>从亥姆霍兹自由能（F）导出：</strong>
+                            基本方程：dF = -SdT - PdV
+                            这里，M = -S，N = -P。
+                            应用欧拉互反关系 (∂M/∂V)<sub>T</sub> = (∂N/∂T)<sub>V</sub>：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">(∂(-S)/∂V)<sub>T</sub> =
+                                (∂(-P)/∂T)<sub>V</sub></div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>因此，(∂S/∂V)<sub>T</sub> =
+                                    (∂P/∂T)<sub>V</sub></strong></div>
+                        </li>
+                        <li><strong>从吉布斯自由能（G）导出：</strong>
+                            基本方程：dG = -SdT + VdP
+                            这里，M = -S，N = V。
+                            应用欧拉互反关系 (∂M/∂P)<sub>T</sub> = (∂N/∂T)<sub>P</sub>：
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2">(∂(-S)/∂P)<sub>T</sub> =
+                                (∂V/∂T)<sub>P</sub></div>
+                            <div class="text-center p-2 bg-slate-100 rounded-md my-2"><strong>因此，- (∂S/∂P)<sub>T</sub> =
+                                    (∂V/∂T)<sub>P</sub></strong></div>
+                        </li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">数学对称性在物理预测中的统一力量</h4>
+                    <p class="text-slate-700 mb-4">
+                        麦克斯韦关系源于“二阶导数的对称性”以及热力学势是“全微分”的事实。一个全微分的数学性质（路径无关性）直接转化为物理现实：对两个自然变量进行无限小变化的顺序不影响热力学势的最终状态。这种数学对称性（∂²z/∂x∂y
+                        = ∂²z/∂y∂x）是麦克斯韦关系的根本来源。</p>
+                    <p class="text-slate-700 mb-4">
+                        这种数学对称性强制要求看似不相关的物理性质之间存在特定的关系（例如，在恒定熵下温度随体积的变化与在恒定体积下压力随熵的变化相关）。这不仅仅是一个方便的恒等式；它深刻地揭示了热力学变量固有的自洽性和相互关联性。这些关系提供了一个强大的预测框架。它们允许实验人员和工程师通过测量易于获取的性质（例如，在等容过程中压力和温度的变化）来确定难以测量的性质（例如，绝热过程中熵的变化）。这种预测能力对于设计和分析热力学过程（从发动机循环到化学反应）至关重要，而无需对熵等量进行复杂而直接的测量，因为这些测量通常不切实际。因此，麦克斯韦关系是热力学分析的基石，将抽象的数学原理转化为实用的预测工具。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">应用与热力学意义</h4>
+                    <p class="text-slate-700 mb-2">麦克斯韦关系是物理化学和热力学中的基本工具：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>关联可测量与不可测量量：</strong>
+                            它们允许通过使用更容易测量的性质（压力、体积和温度）来计算难以直接测量的热力学性质（例如，熵或内能）的变化。例如，(∂S/∂V)<sub>T</sub> 很难直接测量，但
+                            (∂P/∂T)<sub>V</sub> 却可以通过实验获得。</li>
+                        <li><strong>简化复杂计算：</strong> 它们提供了不同热力学性质之间的直接关系，从而简化了复杂的热力学计算。</li>
+                        <li><strong>理解系统行为：</strong>
+                            它们有助于理解热力学系统在不同条件下的行为，例如恒温或恒压。它们突出了热力学性质之间的相互关联性，即使是那些可能没有明显直接联系的性质。</li>
+                        <li><strong>局限性：</strong> 麦克斯韦关系假设系统处于平衡状态，并且基于二阶导数的对称性，这可能不适用于所有系统。</li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">表2：典型麦克斯韦关系总结</h4>
+                    <table class="full-report-table">
+                        <thead>
+                            <tr>
+                                <th>源热力学势</th>
+                                <th>势的微分形式</th>
+                                <th>自然变量</th>
+                                <th>麦克斯韦关系</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>U</td>
+                                <td>dU = TdS - PdV</td>
+                                <td>S, V</td>
+                                <td>(∂T/∂V)<sub>S</sub> = - (∂P/∂S)<sub>V</sub></td>
+                            </tr>
+                            <tr>
+                                <td>H</td>
+                                <td>dH = TdS + VdP</td>
+                                <td>S, P</td>
+                                <td>(∂T/∂P)<sub>S</sub> = (∂V/∂S)<sub>P</sub></td>
+                            </tr>
+                            <tr>
+                                <td>F</td>
+                                <td>dF = -SdT - PdV</td>
+                                <td>T, V</td>
+                                <td>(∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub></td>
+                            </tr>
+                            <tr>
+                                <td>G</td>
+                                <td>dG = -SdT + VdP</td>
+                                <td>T, P</td>
+                                <td>- (∂S/∂P)<sub>T</sub> = (∂V/∂T)<sub>P</sub></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4 mt-8">IV. 关键热力学系数及其相互关系</h3>
+                    <p class="text-lg text-slate-600 mb-8 max-w-3xl">本节将定义并探讨几个重要的可测量热力学系数之间的关系，展示它们如何通过基本热力学原理相互连接。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">A. 热容（C<sub>p</sub> 和 C<sub>v</sub>）</h4>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>定义与物理意义：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>热容（C）是使物质温度改变给定量的热能。它是一个广延性质。</li>
+                                <li><strong>恒容摩尔热容（C<sub>v</sub>）：</strong>
+                                    在恒定体积下，将一摩尔物质的温度升高一个单位所需的热量。它与内能的变化相关：C<sub>v</sub> =
+                                    (∂U/∂T)<sub>V</sub>。在恒定体积下，所有吸收的热量都用于增加内能。</li>
+                                <li><strong>恒压摩尔热容（C<sub>p</sub>）：</strong>
+                                    在恒定压力下，将一摩尔物质的温度升高一个单位所需的热量。它与焓的变化相关：C<sub>p</sub> =
+                                    (∂H/∂T)<sub>P</sub>。在恒定压力下，吸收的热量既用于增加内能，也用于对抗膨胀而对周围环境做功。</li>
+                            </ul>
+                        </li>
+                        <li><strong>理想气体关系（C<sub>p</sub> - C<sub>v</sub> = R）：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>对于一摩尔理想气体，关系式很简单：C<sub>p</sub> - C<sub>v</sub> = R，其中 R 是理想气体常数。这由 ΔH = ΔU + Δ(PV)
+                                    和理想气体 PV = RT 推导而来。</li>
+                            </ul>
+                        </li>
+                        <li><strong>C<sub>p</sub> - C<sub>v</sub> 的一般热力学关系：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>存在一个更通用且普遍适用的关系：<strong>C<sub>p</sub> - C<sub>v</sub> = T V α² /
+                                        κ<sub>T</sub></strong>。</li>
+                                <li><strong>推导步骤：</strong>
+                                    <ol class="list-decimal list-inside ml-4">
+                                        <li>从定义开始：C<sub>p</sub> = (∂H/∂T)<sub>P</sub> 和 C<sub>v</sub> =
+                                            (∂U/∂T)<sub>V</sub>。</li>
+                                        <li>使用 H = U + PV 得到 dH = dU + PdV + VdP。</li>
+                                        <li>在恒定 P 下除以 dT：(∂H/∂T)<sub>P</sub> = (∂U/∂T)<sub>P</sub> +
+                                            P(∂V/∂T)<sub>P</sub>。注意 (∂V/∂T)<sub>P</sub> = Vα。因此，C<sub>p</sub> =
+                                            (∂U/∂T)<sub>P</sub> + PVα。</li>
+                                        <li>使用链式法则和 (∂U/∂V)<sub>T</sub> 表示 (∂U/∂T)<sub>P</sub>：(∂U/∂T)<sub>P</sub> =
+                                            (∂U/∂V)<sub>T</sub> (∂V/∂T)<sub>P</sub> + (∂U/∂T)<sub>V</sub> =
+                                            (∂U/∂V)<sub>T</sub> Vα + C<sub>v</sub>。</li>
+                                        <li>将其代入 C<sub>p</sub> 方程：C<sub>p</sub> = (∂U/∂V)<sub>T</sub> Vα + C<sub>v</sub>
+                                            + PVα。</li>
+                                        <li>从 dU = TdS - PdV 导出 (∂U/∂V)<sub>T</sub>：(∂U/∂V)<sub>T</sub> =
+                                            T(∂S/∂V)<sub>T</sub> - P。</li>
+                                        <li>应用麦克斯韦关系（从 F 导出）：(∂S/∂V)<sub>T</sub> =
+                                            (∂P/∂T)<sub>V</sub>。因此，(∂U/∂V)<sub>T</sub> = T(∂P/∂T)<sub>V</sub> - P。</li>
+                                        <li>将 (∂P/∂T)<sub>V</sub> = α/κ<sub>T</sub>（系数之间的关系）代入
+                                            (∂U/∂V)<sub>T</sub>：(∂U/∂V)<sub>T</sub> = T(α/κ<sub>T</sub>) - P。</li>
+                                        <li>将其回代到 C<sub>p</sub> 方程：C<sub>p</sub> = [T(α/κ<sub>T</sub>) - P]Vα +
+                                            C<sub>v</sub> + PVα。</li>
+                                        <li>简化：C<sub>p</sub> = T V α²/κ<sub>T</sub> - PVα + C<sub>v</sub> + PVα。</li>
+                                        <li>结果：<strong>C<sub>p</sub> - C<sub>v</sub> = T V α²/κ<sub>T</sub></strong>。
+                                        </li>
+                                    </ol>
+                                </li>
+                                <li>这个关系是完全通用的，适用于气体、液体和固体，因为它仅依赖于结合的第一定律和第二定律以及系数的定义。</li>
+                            </ul>
+                        </li>
+                        <li><strong>C<sub>p</sub>-C<sub>v</sub> 差异的普遍意义：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>对于理想气体，C<sub>p</sub> - C<sub>v</sub> = R 是一个众所周知的简单关系。然而，更一般的关系 C<sub>p</sub> -
+                                    C<sub>v</sub> = T V α² / κ<sub>T</sub>
+                                    也被提出。这个通用关系被明确指出是“完全通用”的，适用于“任何物质，无论是气体、液体、动物、植物还是矿物”。此外，T、V、α² 和 κ<sub>T</sub>
+                                    这些项都是固有正值，这意味着 C<sub>p</sub> 总是大于 C<sub>v</sub>。C<sub>p</sub> > C<sub>v</sub>
+                                    的物理原因在于，在恒压下，一部分加入的热量用于对周围环境进行膨胀功，而在恒容下，所有热量都用于增加内能（从而增加温度）。</li>
+                                <li>这种因果关系在于，在恒压和恒容条件下热能利用方式的内在差异（即是否存在 P-V 功）必然导致 C<sub>p</sub> 大于
+                                    C<sub>v</sub>。通用关系通过其他可测量的物质性质（温度、体积、热膨胀系数和等温压缩率）精确地量化了这种差异。这是热力学中一个深刻的普遍真理，表明任何物质的能量核算，无论其相态或复杂性如何，都必须遵循这一基本关系。更广泛的意义是，这个单一的方程将热性质（热容）直接与机械性质（体积、压缩率）以及材料对温度变化的响应（热膨胀）联系起来，为表征和理解任何物质系统，从发动机循环到化学反应，提供了强大的工具。
+                                </li>
+                            </ul>
+                        </li>
+                        <li><strong>热容比（γ 或 κ）：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>热容比（或绝热指数）定义为 γ = C<sub>p</sub>/C<sub>v</sub>。</li>
+                                <li>它在绝热过程中以及确定介质中声速方面至关重要。</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">B. 压缩系数</h4>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>等温压缩率（κ<sub>T</sub>）：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>定义为在恒定温度下，每单位压力变化引起的体积相对变化：<strong>κ<sub>T</sub> = - (1/V)
+                                        (∂V/∂P)<sub>T</sub></strong>。负号确保 κ<sub>T</sub> 为正值，因为压力的增加通常会导致体积的减小。</li>
+                                <li>它衡量材料在恒温下对压力变化的敏感性。</li>
+                            </ul>
+                        </li>
+                        <li><strong>等熵（绝热）压缩率（κ<sub>S</sub>）：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>类似地定义，但在恒定熵下：<strong>κ<sub>S</sub> = - (1/V) (∂V/∂P)<sub>S</sub></strong>。</li>
+                            </ul>
+                        </li>
+                        <li><strong>等温压缩率与等熵压缩率之间的关系：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>这两种压缩率通过热容比（γ）相关联：<strong>κ<sub>T</sub> / κ<sub>S</sub> =
+                                        γ</strong>。这意味着等温压缩率总是大于或等于等熵压缩率（因为 γ ≥
+                                    1）。这是因为在等温条件下，热量可以流动以维持恒定温度，从而允许更大的体积变化；而在等熵（绝热）条件下，没有热量流动，导致更“硬”的响应。</li>
+                            </ul>
+                        </li>
+                        <li><strong>压缩率作为机械稳定性的判据：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>压缩率（κ）量化了材料体积随压力变化的程度。对于“普通材料，体积压缩率……是正的”，并且“这个条件是机械稳定性所必需的”。</li>
+                                <li>“机械稳定性所必需”这一表述是一个关键的物理原理。如果压缩率是负的，压力的增加将导致体积的增加，这在物理上是荒谬的，并且意味着一个系统在任何压力扰动下都会自发膨胀或坍缩，处于不稳定状态。
+                                </li>
+                                <li>这种因果关系在于，机械稳定性的基本原理（系统抵抗压缩并在压力消除后恢复其原始状态）强制要求其压缩率必须为正。这不仅仅是一个观察到的性质；它是稳定物质存在的必要条件。更广泛的意义是，压缩率等热力学系数不仅仅是描述性参数；它们编码了物理系统的基本稳定性判据。与预期正值的偏差（例如在奇异材料中）将预示着高度不寻常或不稳定的状态，突显了宏观可测量性质与基本物理原理之间的深刻联系。
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">C. 热膨胀系数（α）</h4>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>定义：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>体积热膨胀系数（α）定义为在恒定压力下，每单位温度变化引起的体积相对变化：<strong>α = (1/V) (∂V/∂T)<sub>P</sub></strong>。
+                                </li>
+                                <li>它量化了材料随温度变化的膨胀或收缩程度。</li>
+                            </ul>
+                        </li>
+                        <li><strong>理想气体关系：</strong> 对于理想气体，α = 1/T。</li>
+                        <li><strong>物理行为：</strong> 对于大多数物质，α 是正的，这意味着它们受热膨胀。然而，有些材料，如 0°C 到 4°C 之间的水，表现出反常行为，其 α 为负。
+                        </li>
+                        <li><strong>热膨胀作为微观相互作用的窗口：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>热膨胀（α）定义为在恒定压力下体积随温度的相对变化。对于理想气体，α = 1/T。对于真实材料，它通常是正的，但也可能是负的（例如水）。</li>
+                                <li>宏观热膨胀是原子和分子微观行为的直接结果。随着温度升高，粒子的动能增加，导致其在平衡位置附近的振动幅度增大。在大多数情况下，分子间势能阱的非谐性意味着振动增加会导致平均原子间距离增加，从而导致宏观膨胀。
+                                </li>
+                                <li>这种因果关系在于，分子间作用力的性质和强度以及原子的特定排列（晶体结构或液体网络）决定了热膨胀行为。水在特定温度范围内表现出负热膨胀是其独特的氢键网络及其随温度变化的重排的直接结果。这种性质不仅仅是对热量的简单响应；它是底层微观结构和相互作用的“指纹”。更广泛的意义是，像
+                                    α
+                                    这样的系数是宏观热力学行为与材料原子/分子层面性质之间的关键联系。通过研究这些系数，科学家可以推断物质的内部结构、键合和动力学细节，这对于材料科学、工程和理解基本物理现象至关重要。
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">表3：关键热力学系数及其定义总结</h4>
+                    <table class="full-report-table">
+                        <thead>
+                            <tr>
+                                <th>系数名称</th>
+                                <th>符号</th>
+                                <th>定义</th>
+                                <th>关键关系式</th>
+                                <th>物理意义</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>恒容摩尔热容</td>
+                                <td>C<sub>v</sub></td>
+                                <td>(∂U/∂T)<sub>V</sub></td>
+                                <td>-</td>
+                                <td>恒容下热量转化为内能的效率</td>
+                            </tr>
+                            <tr>
+                                <td>恒压摩尔热容</td>
+                                <td>C<sub>p</sub></td>
+                                <td>(∂H/∂T)<sub>P</sub></td>
+                                <td>C<sub>p</sub> - C<sub>v</sub> = T V α²/κ<sub>T</sub> (通用)</td>
+                                <td>恒压下热量转化为内能和膨胀功的效率</td>
+                            </tr>
+                            <tr>
+                                <td>热容比</td>
+                                <td>γ</td>
+                                <td>C<sub>p</sub>/C<sub>v</sub></td>
+                                <td>κ<sub>T</sub> / κ<sub>S</sub> = γ</td>
+                                <td>绝热过程和声速的关键参数</td>
+                            </tr>
+                            <tr>
+                                <td>等温压缩率</td>
+                                <td>κ<sub>T</sub></td>
+                                <td>- (1/V) (∂V/∂P)<sub>T</sub></td>
+                                <td>-</td>
+                                <td>恒温下体积对压力变化的敏感度</td>
+                            </tr>
+                            <tr>
+                                <td>等熵压缩率</td>
+                                <td>κ<sub>S</sub></td>
+                                <td>- (1/V) (∂V/∂P)<sub>S</sub></td>
+                                <td>-</td>
+                                <td>恒熵下体积对压力变化的敏感度</td>
+                            </tr>
+                            <tr>
+                                <td>体积热膨胀系数</td>
+                                <td>α</td>
+                                <td>(1/V) (∂V/∂T)<sub>P</sub></td>
+                                <td>-</td>
+                                <td>恒压下体积对温度变化的敏感度</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4 mt-8">V. 高阶关系：雅可比行列式的力量</h3>
+                    <p class="text-lg text-slate-600 mb-8 max-w-3xl">
+                        本节将介绍雅可比行列式作为一种强大的数学工具，用于系统化和简化复杂热力学关系（特别是涉及高阶导数）的推导。</p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">雅可比行列式作为热力学工具的引入</h4>
+                    <p class="text-slate-700 mb-4">
+                        雅可比矩阵是向量值函数所有一阶偏导数的矩阵，其行列式（雅可比行列式）在多变量微积分中对于坐标变换至关重要。在热力学中，雅可比行列式提供了一种优雅而系统的方法来表达物理关系，而无需受限于特定的独立变量集。这是现代热力学创始人鲁道夫·克劳修斯广泛使用的一种方法。它们简化了偏导数的处理，这在复杂的热力学问题中可能会变得繁琐。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">热力学雅可比行列式的形式性质与恒等式</h4>
+                    <p class="text-slate-700 mb-4">对于具有两个自由度的系统，雅可比行列式 定义为：∂(A,B) / ∂(x,y) = (∂A/∂x)(∂B/∂y) -
+                        (∂A/∂y)(∂B/∂x)，其中 x, y 是确定系统状态的任意变量。</p>
+                    <p class="text-slate-700 mb-2">关键的代数性质包括：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>反对称性：</strong> ∂(A,B) = -∂(B,A)；∂(A,A) = 0。</li>
+                        <li><strong>线性：</strong> ∂(A+C,B) = ∂(A,B) + ∂(C,B)。</li>
+                        <li><strong>复合（链式法则）：</strong> ∂(A,B)/∂(x,y) = [∂(A,C)/∂(x,y)] * [∂(C,B)/∂(C,B)] -
+                            (此为通用形式，与文献中特定符号不同，但更具普适性)。</li>
+                        <li><strong>循环恒等式：</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>dC + dA + ∂(C,A) dB = 0 （对于三个变量 A, B, C）</li>
+                                <li>∂(A,B)/∂(X,Y) + ∂(B,C)/∂(X,Y) + ∂(C,A)/∂(X,Y) = 0</li>
+                                <li>∂(C,X) + ∂(A,X) + ∂(C,A) = 0</li>
+                            </ul>
+                        </li>
+                        <li><strong>基本定理：</strong> 如果 dA = bdB + cdC，那么对于所有 X，∂(A,X) = b ∂(B,X) + c
+                            ∂(C,X)。这个恒等式对于势的导数变换特别强大。</li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">使用雅可比行列式表达麦克斯韦关系及其他导数</h4>
+                    <p class="text-slate-700 mb-4">四个典型的麦克斯韦关系可以用一个雅可比恒等式优雅地表达：<strong>∂(T,S) =
+                            ∂(P,V)</strong>。这表明了它们的共同来源并简化了记忆。</p>
+                    <p class="text-slate-700 mb-2">其他重要的热力学导数和关系也可以简洁地表达：</p>
+                    <ul class="list-disc list-inside text-slate-700 mb-4">
+                        <li><strong>热容：</strong> 在恒定 X 下的热容为 C<sub>X</sub> = T(∂S/∂T)<sub>X</sub>。在雅可比符号中，这变为
+                            <strong>C<sub>X</sub> = T ∂(S,X) / ∂(T,X)</strong>。</li>
+                        <li><strong>能量方程：</strong> ∂(U,X) = T ∂(S,X) - P ∂(V,X)。这可以进一步简化，例如，∂(U,X) = C<sub>v</sub> - P
+                            ∂(V,X)。</li>
+                        <li><strong>焓方程：</strong> ∂(H,X) = T ∂(S,X) + V ∂(P,X)。这可以进一步简化，例如，∂(H,X) = C<sub>p</sub> + V
+                            ∂(P,X)。</li>
+                    </ul>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">雅可比行列式形式对复杂推导的优势</h4>
+                    <p class="text-slate-700 mb-4">
+                        雅可比行列式将偏导数的操作从纯粹的微积分练习提升为更代数化的操作。其反对称性、线性性和循环恒等式等性质允许对热力学关系进行符号操作，这种操作比直接应用链式法则或欧拉互反关系更抽象、更强大。所有四个麦克斯韦关系都可以通过单一的恒等式
+                        ∂(T,S) = ∂(P,V) 来概括，这正是其统一力量的最好例证。</p>
+                    <p class="text-slate-700 mb-4">
+                        这种因果关系在于，状态函数微分的全微分性质，结合行列式的代数性质，允许构建一种通用的数学语言（雅可比行列式），可以用任何选定的独立变量集来表达任何热力学导数。这提供了一种系统的方法来推导复杂关系、简化表达式并确保整个热力学体系的一致性。雅可比行列式为将不可测量量（如熵导数）转换为可测量量（如
+                        P、V、T
+                        导数）提供了“方向感”，这是这种代数力量的直接结果。更广泛的意义在于，雅可比行列式代表了热力学中数学优雅的巅峰，将可能繁琐且容易出错的偏微分方程领域转化为一个更结构化、更直观的代数系统，使高级热力学推导对于研究人员和理论家来说更易于理解和系统化。
+                    </p>
+
+                    <h4 class="text-2xl font-bold text-slate-800 mb-3">表4：常用雅可比恒等式及其热力学应用</h4>
+                    <table class="full-report-table">
+                        <thead>
+                            <tr>
+                                <th>雅可比恒等式</th>
+                                <th>热力学应用/解释</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>∂(A,B) = - ∂(B,A)</td>
+                                <td>反对称性，例如 ∂(T,V) = - ∂(V,T)</td>
+                            </tr>
+                            <tr>
+                                <td>∂(A,A) = 0</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>∂(A+C,B) = ∂(A,B) + ∂(C,B)</td>
+                                <td>线性性质</td>
+                            </tr>
+                            <tr>
+                                <td>dC + dA + ∂(C,A) dB = 0</td>
+                                <td>循环恒等式，用于变量变换</td>
+                            </tr>
+                            <tr>
+                                <td>∂(T,S) = ∂(P,V)</td>
+                                <td>统一表达所有四个麦克斯韦关系</td>
+                            </tr>
+                            <tr>
+                                <td>C<sub>X</sub> = T ∂(S,X) / ∂(T,X)</td>
+                                <td>将热容表示为雅可比行列式，其中 X 是恒定变量</td>
+                            </tr>
+                            <tr>
+                                <td>∂(U,X) = T ∂(S,X) - P ∂(V,X)</td>
+                                <td>内能的雅可比形式，可进一步简化为 ∂(U,X) = C<sub>v</sub> - P ∂(V,X)</td>
+                            </tr>
+                            <tr>
+                                <td>∂(H,X) = T ∂(S,X) + V ∂(P,X)</td>
+                                <td>焓的雅可比形式，可进一步简化为 ∂(H,X) = C<sub>p</sub> + V ∂(P,X)</td>
+                            </tr>
+                            <tr>
+                                <td>∂(A,B) / ∂(C,B) = (∂A/∂C)<sub>B</sub></td>
+                                <td>链式法则的雅可比形式，例如 (∂T/∂P)<sub>S</sub> = ∂(T,S) / ∂(P,S)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4 mt-8">VI. 结论</h3>
+                    <p class="text-slate-700 mb-4">
+                        热力学建立在基本热力学量（U、H、F、G）的基础上，它们之间的关系由其一阶导数（基本方程）精确定义。这些微分的全微分性质导致了强大的麦克斯韦关系，它们是二阶导数，将看似不相关的性质相互连接，从而允许从易于获取的量计算难以测量的量。
+                    </p>
+                    <p class="text-slate-700 mb-4">热容、压缩率和热膨胀等关键可测量系数被深度整合到这个框架中，其通用关系（例如，C<sub>p</sub> - C<sub>v</sub>
+                        = T V
+                        α²/κ<sub>T</sub>）反映了基本物理原理和稳定性判据。雅可比行列式的先进形式提供了一种优雅而系统的数学语言，用于处理和推导这些复杂的相互依赖关系，将偏微分的微积分转化为一个更易于处理的代数系统。
+                    </p>
+                    <p class="text-slate-700 mb-4">
+                        最终，这些关系的完整网络构成了一个稳健、自洽且具有预测能力的理论框架，对于理解能量转换、平衡以及化学、物理和工程领域中物质在所有尺度上的行为都不可或缺。</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function updateContent(hash) {
+                hash = hash || window.location.hash || '#potentials';
+
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+
+                contentSections.forEach(section => {
+                    if ('#' + section.id === hash) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                if (hash === '#coefficients') {
+                    renderHeatCapacityChart();
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const hash = e.target.closest('a').getAttribute('href');
+                    history.pushState(null, null, hash);
+                    updateContent(hash);
+                });
+            });
+
+            window.addEventListener('popstate', () => {
+                updateContent(window.location.hash);
+            });
+
+            updateContent();
+
+            const potentialData = {
+                U: {
+                    name: "内能 (U)",
+                    content: `
+                <p><strong>定义:</strong> 系统内部所包含的总能量。</p>
+                <p><strong>自然变量:</strong> S (熵), V (体积)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dU = TdS - PdV</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>T = (∂U/∂S)<sub>V</sub></li>
+                    <li>-P = (∂U/∂V)<sub>S</sub></li>
+                </ul>
+            `
+                },
+                H: {
+                    name: "焓 (H)",
+                    content: `
+                <p><strong>定义:</strong> H = U + PV</p>
+                <p><strong>自然变量:</strong> S (熵), P (压力)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dH = TdS + VdP</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>T = (∂H/∂S)<sub>P</sub></li>
+                    <li>V = (∂H/∂P)<sub>S</sub></li>
+                </ul>
+            `
+                },
+                F: {
+                    name: "亥姆霍兹自由能 (F)",
+                    content: `
+                <p><strong>定义:</strong> F = U - TS</p>
+                <p><strong>自然变量:</strong> T (温度), V (体积)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dF = -SdT - PdV</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>-S = (∂F/∂T)<sub>V</sub></li>
+                    <li>-P = (∂F/∂V)<sub>T</sub></li>
+                </ul>
+            `
+                },
+                G: {
+                    name: "吉布斯自由能 (G)",
+                    content: `
+                <p><strong>定义:</strong> G = H - TS</p>
+                <p><strong>自然变量:</strong> T (温度), P (压力)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dG = -SdT + VdP</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>-S = (∂G/∂T)<sub>P</sub></li>
+                    <li>V = (∂G/∂P)<sub>T</sub></li>
+                </ul>
+            `
+                },
+            };
+
+            const potentialNodes = document.querySelectorAll('.potential-node');
+            const potentialNameEl = document.getElementById('potential-name');
+            const potentialContentEl = document.getElementById('potential-content');
+
+            potentialNodes.forEach(node => {
+                node.addEventListener('click', () => {
+                    const potentialKey = node.dataset.potential;
+                    const data = potentialData[potentialKey];
+
+                    potentialNodes.forEach(n => n.classList.remove('active'));
+                    node.classList.add('active');
+
+                    potentialNameEl.textContent = data.name;
+                    potentialContentEl.innerHTML = data.content;
+                });
+            });
+
+            const maxwellData = {
+                U: {
+                    title: "源于内能 U",
+                    steps: [
+                        "<strong>基本方程:</strong> dU = TdS - PdV",
+                        "由于 U 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                        "(∂/∂V)<sub>S</sub> (∂U/∂S)<sub>V</sub> = (∂/∂S)<sub>V</sub> (∂U/∂V)<sub>S</sub>",
+                        "代入 T = (∂U/∂S)<sub>V</sub> 和 -P = (∂U/∂V)<sub>S</sub>, 得到:",
+                        "<strong>(∂T/∂V)<sub>S</sub> = -(∂P/∂S)<sub>V</sub></strong>"
+                    ]
+                },
+                H: {
+                    title: "源于焓 H",
+                    steps: [
+                        "<strong>基本方程:</strong> dH = TdS + VdP",
+                        "由于 H 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                        "(∂/∂P)<sub>S</sub> (∂H/∂S)<sub>P</sub> = (∂/∂S)<sub>P</sub> (∂H/∂P)<sub>S</sub>",
+                        "代入 T = (∂H/∂S)<sub>P</sub> 和 V = (∂H/∂P)<sub>S</sub>, 得到:",
+                        "<strong>(∂T/∂P)<sub>S</sub> = (∂V/∂S)<sub>P</sub></strong>"
+                    ]
+                },
+                F: {
+                    title: "源于亥姆霍兹自由能 F",
+                    steps: [
+                        "<strong>基本方程:</strong> dF = -SdT - PdV",
+                        "由于 F 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                        "(∂/∂V)<sub>T</sub> (∂F/∂T)<sub>V</sub> = (∂/∂T)<sub>V</sub> (∂F/∂V)<sub>T</sub>",
+                        "代入 -S = (∂F/∂T)<sub>V</sub> 和 -P = (∂F/∂V)<sub>T</sub>, 得到:",
+                        "<strong>(∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub></strong>"
+                    ]
+                },
+                G: {
+                    title: "源于吉布斯自由能 G",
+                    steps: [
+                        "<strong>基本方程:</strong> dG = -SdT + VdP",
+                        "由于 G 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                        "(∂/∂P)<sub>T</sub> (∂G/∂T)<sub>P</sub> = (∂/∂T)<sub>P</sub> (∂G/∂P)<sub>T</sub>",
+                        "代入 -S = (∂G/∂T)<sub>P</sub> 和 V = (∂G/∂P)<sub>T</sub>, 得到:",
+                        "<strong>-(∂S/∂P)<sub>T</sub> = (∂V/∂T)<sub>P</sub></strong>"
+                    ]
+                }
+            };
+
+            const maxwellBtns = document.querySelectorAll('.maxwell-btn');
+            const maxwellDetailsEl = document.getElementById('maxwell-details');
+
+            maxwellBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const potentialKey = btn.dataset.potential;
+                    const data = maxwellData[potentialKey];
+
+                    maxwellBtns.forEach(b => {
+                        b.classList.remove('bg-teal-600', 'text-white');
+                        b.classList.add('bg-white', 'text-teal-700');
+                    });
+                    btn.classList.add('bg-teal-600', 'text-white');
+                    btn.classList.remove('bg-white', 'text-teal-700');
+
+                    let html = `<h3 class="text-2xl font-bold text-teal-700 mb-4">${data.title}</h3><div class="space-y-3">`;
+                    data.steps.forEach((step, index) => {
+                        html += `<div class="p-3 bg-slate-50 rounded-lg derivation-step" style="transition-delay: ${index * 150}ms">${step}</div>`;
+                    });
+                    html += `</div>`;
+                    maxwellDetailsEl.innerHTML = html;
+
+                    setTimeout(() => {
+                        const steps = maxwellDetailsEl.querySelectorAll('.derivation-step');
+                        steps.forEach(s => {
+                            s.style.opacity = '1';
+                            s.style.transform = 'translateY(0)';
+                        });
+                    }, 50);
+                });
+            });
+
+            let heatCapacityChartInstance = null;
+            function renderHeatCapacityChart() {
+                if (heatCapacityChartInstance) {
+                    heatCapacityChartInstance.destroy();
+                }
+                const ctx = document.getElementById('heatCapacityChart').getContext('2d');
+                heatCapacityChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Cᵥ (定容)', 'Cₚ (定压)'],
+                        datasets: [{
+                            label: '热容比较',
+                            data: [12.47, 20.78],
+                            backgroundColor: [
+                                'rgba(56, 189, 248, 0.6)',
+                                'rgba(13, 148, 136, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(56, 189, 248, 1)',
+                                'rgba(13, 148, 136, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y + ' J/(mol·K)';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: '通常 Cₚ > Cᵥ (以理想气体He为例)'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'J / (mol·K)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const derivations = {
+                dSp: {
+                    title: "推导 (∂S/∂P)<sub>T</sub>",
+                    steps: [
+                        "目标: 将 (∂S/∂P)<sub>T</sub> 用可测量表示。",
+                        "思路: 利用麦克斯韦关系。我们寻找一个包含 dP 和 dT 项的热力学势。",
+                        "选择吉布斯自由能 G，其基本方程为: dG = -SdT + VdP。",
+                        "根据麦克斯韦关系 (源于G): -(∂S/∂P)<sub>T</sub> = (∂V/∂T)<sub>P</sub>。",
+                        "移项可得: (∂S/∂P)<sub>T</sub> = -(∂V/∂T)<sub>P</sub>。",
+                        "我们知道热膨胀系数 α = (1/V)(∂V/∂T)<sub>P</sub>，因此 (∂V/∂T)<sub>P</sub> = Vα。",
+                        "最终结果: <strong>(∂S/∂P)<sub>T</sub> = -Vα</strong>"
+                    ]
+                },
+                dSv: {
+                    title: "推导 (∂S/∂V)<sub>T</sub>",
+                    steps: [
+                        "目标: 将 (∂S/∂V)<sub>T</sub> 用可测量表示。",
+                        "思路: 利用麦克斯韦关系。我们寻找一个包含 dV 和 dT 项的热力学势。",
+                        "选择亥姆霍兹自由能 F，其基本方程为: dF = -SdT - PdV。",
+                        "根据麦克斯韦关系 (源于F): (∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub>。",
+                        "利用循环关系 (∂P/∂T)<sub>V</sub>(∂T/∂V)<sub>P</sub>(∂V/∂P)<sub>T</sub> = -1, 可得 (∂P/∂T)<sub>V</sub> = -(∂V/∂T)<sub>P</sub> / (∂V/∂P)<sub>T</sub>。",
+                        "代入 α 和 κ<sub>T</sub> 的定义: (∂V/∂T)<sub>P</sub> = Vα, (∂V/∂P)<sub>T</sub> = -Vκ<sub>T</sub>。",
+                        "所以 (∂P/∂T)<sub>V</sub> = -(Vα) / (-Vκ<sub>T</sub>) = α / κ<sub>T</sub>。",
+                        "最终结果: <strong>(∂S/∂V)<sub>T</sub> = α / κ<sub>T</sub></strong>"
+                    ]
+                },
+                dUv: {
+                    title: "推导 (∂U/∂V)<sub>T</sub> (内压)",
+                    steps: [
+                        "目标: 将 (∂U/∂V)<sub>T</sub> 用可测量表示。",
+                        "从内能基本方程 dU = TdS - PdV 出发。",
+                        "两边同除以 dV 并保持 T 恒定: (∂U/∂V)<sub>T</sub> = T(∂S/∂V)<sub>T</sub> - P。",
+                        "我们已经知道 (∂S/∂V)<sub>T</sub> 的麦克斯韦关系 (源于F): (∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub>。",
+                        "代入得到: (∂U/∂V)<sub>T</sub> = T(∂P/∂T)<sub>V</sub> - P。",
+                        "从 (∂S/∂V)<sub>T</sub> 的推导中可知 (∂P/∂T)<sub>V</sub> = α / κ<sub>T</sub>。",
+                        "最终结果: <strong>(∂U/∂V)<sub>T</sub> = T(α/κ<sub>T</sub>) - P</strong>"
+                    ]
+                },
+                dUp: {
+                    title: "推导 (∂U/∂P)<sub>T</sub>",
+                    steps: [
+                        "目标: 将 (∂U/∂P)<sub>T</sub> 用可测量表示。",
+                        "思路: 使用链式法则 (∂U/∂P)<sub>T</sub> = (∂U/∂V)<sub>T</sub> (∂V/∂P)<sub>T</sub>。",
+                        "我们已经推导出内压 (∂U/∂V)<sub>T</sub> = T(α/κ<sub>T</sub>) - P。",
+                        "根据定义，等温压缩率 κ<sub>T</sub> = -(1/V)(∂V/∂P)<sub>T</sub>, 所以 (∂V/∂P)<sub>T</sub> = -Vκ<sub>T</sub>。",
+                        "将两部分相乘: (∂U/∂P)<sub>T</sub> = [T(α/κ<sub>T</sub>) - P] * (-Vκ<sub>T</sub>)。",
+                        "展开得到: (∂U/∂P)<sub>T</sub> = -T(α/κ<sub>T</sub>)Vκ<sub>T</sub> + PVκ<sub>T</sub>。",
+                        "最终结果: <strong>(∂U/∂P)<sub>T</sub> = PVκ<sub>T</sub> - TVα</strong>"
+                    ]
+                }
+            };
+
+            const deriveBtn = document.getElementById('derive-btn');
+            const derivativeSelect = document.getElementById('derivative-select');
+            const derivationOutput = document.getElementById('derivation-output');
+
+            deriveBtn.addEventListener('click', () => {
+                const selected = derivativeSelect.value;
+                const data = derivations[selected];
+
+                let html = `<h3 class="text-2xl font-bold text-teal-700 mb-4">${data.title}</h3><div class="space-y-3">`;
+                data.steps.forEach((step, index) => {
+                    html += `<div class="p-3 bg-slate-50 rounded-lg derivation-step" style="transition-delay: ${index * 150}ms">${step}</div>`;
+                });
+                html += `</div>`;
+                derivationOutput.innerHTML = html;
+
+                setTimeout(() => {
+                    const steps = derivationOutput.querySelectorAll('.derivation-step');
+                    steps.forEach(s => {
+                        s.style.opacity = '1';
+                        s.style.transform = 'translateY(0)';
+                    });
+                }, 50);
+            });
+        });
+    </script>
+
+</body>
+
+</html>

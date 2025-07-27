@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式热力学关系浏览器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Slate/Stone neutrals with Teal accent) -->
+    <!-- Application Structure Plan: A multi-section SPA with sidebar navigation (Overview, Potentials, Maxwell, Coefficients, Derivator). This non-linear structure allows users to explore topics based on their needs, moving from fundamentals to advanced tools. It's more engaging and functional than a linear report, transforming a reference document into an interactive study tool. -->
+    <!-- Visualization & Content Choices: Potentials -> Interactive Diagram (HTML/CSS) -> Goal: Organize/Inform -> JS updates details on click. Maxwell Relations -> Visual Derivation from Diagram -> Goal: Explain -> JS shows step-by-step logic. Coefficients -> Interactive Cards & Bar Chart (Chart.js) -> Goal: Compare/Inform -> JS toggles details, Chart.js visualizes Cp>Cv. Derivator -> Rule-based tool -> Goal: Synthesize/Tool -> JS logic derives relations. This approach uses interaction to clarify complex relationships. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .katex-frac .numerator { text-align: center; }
+        .katex-frac .denominator { text-align: center; }
+        .katex-frac .frac-line { border-top: 1px solid currentColor; margin: 0.2em 0; }
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link2 { transition: all 0.2s ease-in-out; }
+        .nav-link.active { background-color: #0d9488; color: white; }
+        .nav-link:not(.active):hover { background-color: #f0fdfa; color: #115e59; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .potential-node { transition: all 0.2s ease-in-out; cursor: pointer; border: 2px solid transparent; }
+        .potential-node.active { border-color: #0d9488; transform: scale(1.05); box-shadow: 0 4px 14px 0 rgba(13, 148, 136, 0.3); }
+        .coeff-card { transition: all 0.3s ease-in-out; }
+        .coeff-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .derivation-step {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <nav class="bg-white md:w-64 p-4 md:p-6 shadow-md md:shadow-lg flex-shrink-0">
+            <h1 class="text-2xl font-bold text-teal-700 mb-8">热力学导航</h1>
+            <ul class="space-y-2">
+                <li><a href="#potentials" class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">热力学势</a></li>
+                <li><a href="#maxwell" class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">麦克斯韦关系</a></li>
+                <li><a href="#coefficients" class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">关键系数</a></li>
+                <li><a href="#deriver" class="nav-link block w-full text-left px-4 py-2 rounded-lg font-medium">关系推导器</a></li>
+                <li><a href="index.html" " class="nav-link2 block w-full text-left px-4 py-2 rounded-lg font-medium">矢量分析与张量分析</a></li>
+            </ul>
+                
+        </nav>
+
+        <main class="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
+            
+            <section id="potentials" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">热力学势函数</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">热力学势是描述系统状态的标量函数。通过对这些势函数求其自然变量的偏导数，可以推导出系统的所有热力学性质。下方是一个交互式关系图，点击不同的热力学势（U, H, F, G）来查看其详细信息和基本方程。</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="relative w-full max-w-md mx-auto aspect-square flex items-center justify-center">
+                        <div class="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg" data-potential="F">
+                            <span class="text-2xl font-bold">F</span>
+                        </div>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg" data-potential="U">
+                            <span class="text-2xl font-bold">U</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg" data-potential="G">
+                            <span class="text-2xl font-bold">G</span>
+                        </div>
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 potential-node p-4 rounded-lg bg-white shadow-lg" data-potential="H">
+                            <span class="text-2xl font-bold">H</span>
+                        </div>
+                        <div class="text-center text-slate-500">
+                            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 text-xl font-semibold">S</div>
+                            <div class="absolute top-1/2 left-1/4 -translate-y-1/2 text-xl font-semibold">V</div>
+                            <div class="absolute top-1/2 right-1/4 -translate-y-1/2 text-xl font-semibold">P</div>
+                            <div class="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-xl font-semibold">T</div>
+                        </div>
+                    </div>
+
+                    <div id="potential-details" class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                        <h3 id="potential-name" class="text-3xl font-bold text-teal-700 mb-4">选择一个势函数</h3>
+                        <div id="potential-content" class="space-y-4 text-slate-700">
+                            <p>点击左侧图中的 U, H, F, 或 G 来查看详情。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="maxwell" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">麦克斯韦关系</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">麦克斯韦关系源于热力学势的全微分性质，揭示了不同热力学量偏导数之间的内在联系。它们是连接可测量与不可测量量的桥梁。点击下方的热力学势，查看对应的麦克斯韦关系及其推导过程。</p>
+                <div class="flex flex-wrap gap-4 mb-8">
+                    <button class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition" data-potential="U">源于 U</button>
+                    <button class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition" data-potential="H">源于 H</button>
+                    <button class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition" data-potential="F">源于 F</button>
+                    <button class="maxwell-btn px-6 py-2 bg-white border-2 border-teal-600 text-teal-700 font-semibold rounded-full hover:bg-teal-50 transition" data-potential="G">源于 G</button>
+                </div>
+                <div id="maxwell-details" class="bg-white p-6 rounded-xl shadow-lg border border-slate-200 min-h-[200px]">
+                     <p class="text-slate-600">请选择一个源势函数来查看对应的麦克斯韦关系。</p>
+                </div>
+            </section>
+
+            <section id="coefficients" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">关键热力学系数</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">热力学系数是表征物质宏观性质的可测量物理量，如热容、压缩率和热膨胀系数。它们之间存在着深刻的联系，这些联系同样由热力学基本定律决定。</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">热容 C<sub>p</sub> & C<sub>v</sub></h3>
+                        <p class="text-slate-600 mb-4">衡量物质升高单位温度所需吸收的热量。</p>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>C<sub>p</sub> (定压热容):</strong> (∂H/∂T)<sub>P</sub></p>
+                            <p><strong>C<sub>v</sub> (定容热容):</strong> (∂U/∂T)<sub>V</sub></p>
+                            <p class="font-semibold mt-2">通用关系:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">C<sub>p</sub> - C<sub>v</sub> = T V α² / κ<sub>T</sub></div>
+                        </div>
+                        <div class="chart-container relative w-full h-48 mt-4"><canvas id="heatCapacityChart"></canvas></div>
+                    </div>
+                     <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">热膨胀系数 α</h3>
+                        <p class="text-slate-600 mb-4">衡量物质体积随温度变化的敏感度。</p>
+                        <div class="space-y-2 text-sm">
+                            <p class="font-semibold">定义:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">α = (1/V) (∂V/∂T)<sub>P</sub></div>
+                            <p class="mt-2 text-slate-500">对于大多数物质 α > 0 (热胀冷缩)，但水在0-4°C时例外。</p>
+                        </div>
+                    </div>
+                    <div class="coeff-card p-6 bg-white rounded-xl shadow-md border border-slate-200">
+                        <h3 class="text-2xl font-bold text-teal-700 mb-2">等温压缩率 κ<sub>T</sub></h3>
+                        <p class="text-slate-600 mb-4">衡量物质体积随压力变化的敏感度。</p>
+                        <div class="space-y-2 text-sm">
+                            <p class="font-semibold">定义:</p>
+                            <div class="text-center p-2 bg-teal-50 rounded-md">κ<sub>T</sub> = - (1/V) (∂V/∂P)<sub>T</sub></div>
+                            <p class="mt-2 text-slate-500">κ<sub>T</sub> > 0 是力学稳定性的必要条件。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="deriver" class="content-section">
+                <h2 class="text-4xl font-bold mb-4 text-slate-900">关系推导器</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-3xl">这是一个简化工具，用于演示如何将一个难以测量的偏导数（如熵的导数）转换为由可测量的物理量（P, V, T, C<sub>p</sub>, α, κ<sub>T</sub>）表示。选择一个目标导数，查看其推导过程。</p>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <div class="flex flex-wrap items-center gap-4 mb-6">
+                        <label for="derivative-select" class="font-semibold text-lg">选择要推导的量:</label>
+                        <select id="derivative-select" class="p-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="dSp"> (∂S/∂P)<sub>T</sub> </option>
+                            <option value="dSv"> (∂S/∂V)<sub>T</sub> </option>
+                            <option value="dUp"> (∂U/∂P)<sub>T</sub> </option>
+                            <option value="dUv"> (∂U/∂V)<sub>T</sub> </option>
+                        </select>
+                        <button id="derive-btn" class="px-6 py-2 bg-teal-600 text-white font-semibold rounded-full hover:bg-teal-700 transition">开始推导</button>
+                    </div>
+                    <div id="derivation-output" class="mt-4 space-y-3">
+                        <p class="text-slate-500">推导步骤将显示在这里。</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    function updateContent(hash) {
+        hash = hash || window.location.hash || '#potentials';
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === hash) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        contentSections.forEach(section => {
+            if ('#' + section.id === hash) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+        
+        if (hash === '#coefficients') {
+            renderHeatCapacityChart();
+        }
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const hash = e.target.closest('a').getAttribute('href');
+            history.pushState(null, null, hash);
+            updateContent(hash);
+        });
+    });
+
+    window.addEventListener('popstate', () => {
+        updateContent(window.location.hash);
+    });
+
+    updateContent();
+
+    const potentialData = {
+        U: {
+            name: "内能 (U)",
+            content: `
+                <p><strong>定义:</strong> 系统内部所包含的总能量。</p>
+                <p><strong>自然变量:</strong> S (熵), V (体积)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dU = TdS - PdV</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>T = (∂U/∂S)<sub>V</sub></li>
+                    <li>-P = (∂U/∂V)<sub>S</sub></li>
+                </ul>
+            `
+        },
+        H: {
+            name: "焓 (H)",
+            content: `
+                <p><strong>定义:</strong> H = U + PV</p>
+                <p><strong>自然变量:</strong> S (熵), P (压力)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dH = TdS + VdP</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>T = (∂H/∂S)<sub>P</sub></li>
+                    <li>V = (∂H/∂P)<sub>S</sub></li>
+                </ul>
+            `
+        },
+        F: {
+            name: "亥姆霍兹自由能 (F)",
+            content: `
+                <p><strong>定义:</strong> F = U - TS</p>
+                <p><strong>自然变量:</strong> T (温度), V (体积)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dF = -SdT - PdV</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>-S = (∂F/∂T)<sub>V</sub></li>
+                    <li>-P = (∂F/∂V)<sub>T</sub></li>
+                </ul>
+            `
+        },
+        G: {
+            name: "吉布斯自由能 (G)",
+            content: `
+                <p><strong>定义:</strong> G = H - TS</p>
+                <p><strong>自然变量:</strong> T (温度), P (压力)</p>
+                <p class="font-semibold mt-2">基本方程:</p>
+                <div class="text-center p-2 bg-slate-100 rounded-md">dG = -SdT + VdP</div>
+                <p class="font-semibold mt-2">一阶导数:</p>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>-S = (∂G/∂T)<sub>P</sub></li>
+                    <li>V = (∂G/∂P)<sub>T</sub></li>
+                </ul>
+            `
+        },
+    };
+
+    const potentialNodes = document.querySelectorAll('.potential-node');
+    const potentialNameEl = document.getElementById('potential-name');
+    const potentialContentEl = document.getElementById('potential-content');
+
+    potentialNodes.forEach(node => {
+        node.addEventListener('click', () => {
+            const potentialKey = node.dataset.potential;
+            const data = potentialData[potentialKey];
+
+            potentialNodes.forEach(n => n.classList.remove('active'));
+            node.classList.add('active');
+
+            potentialNameEl.textContent = data.name;
+            potentialContentEl.innerHTML = data.content;
+        });
+    });
+
+    const maxwellData = {
+        U: {
+            title: "源于内能 U",
+            steps: [
+                "<strong>基本方程:</strong> dU = TdS - PdV",
+                "由于 U 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                "(∂/∂V)<sub>S</sub> (∂U/∂S)<sub>V</sub> = (∂/∂S)<sub>V</sub> (∂U/∂V)<sub>S</sub>",
+                "代入 T = (∂U/∂S)<sub>V</sub> 和 -P = (∂U/∂V)<sub>S</sub>, 得到:",
+                "<strong>(∂T/∂V)<sub>S</sub> = -(∂P/∂S)<sub>V</sub></strong>"
+            ]
+        },
+        H: {
+            title: "源于焓 H",
+            steps: [
+                "<strong>基本方程:</strong> dH = TdS + VdP",
+                "由于 H 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                "(∂/∂P)<sub>S</sub> (∂H/∂S)<sub>P</sub> = (∂/∂S)<sub>P</sub> (∂H/∂P)<sub>S</sub>",
+                "代入 T = (∂H/∂S)<sub>P</sub> 和 V = (∂H/∂P)<sub>S</sub>, 得到:",
+                "<strong>(∂T/∂P)<sub>S</sub> = (∂V/∂S)<sub>P</sub></strong>"
+            ]
+        },
+        F: {
+            title: "源于亥姆霍兹自由能 F",
+            steps: [
+                "<strong>基本方程:</strong> dF = -SdT - PdV",
+                "由于 F 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                "(∂/∂V)<sub>T</sub> (∂F/∂T)<sub>V</sub> = (∂/∂T)<sub>V</sub> (∂F/∂V)<sub>T</sub>",
+                "代入 -S = (∂F/∂T)<sub>V</sub> 和 -P = (∂F/∂V)<sub>T</sub>, 得到:",
+                "<strong>(∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub></strong>"
+            ]
+        },
+        G: {
+            title: "源于吉布斯自由能 G",
+            steps: [
+                "<strong>基本方程:</strong> dG = -SdT + VdP",
+                "由于 G 是状态函数，其微分为全微分，满足欧拉互反关系:",
+                "(∂/∂P)<sub>T</sub> (∂G/∂T)<sub>P</sub> = (∂/∂T)<sub>P</sub> (∂G/∂P)<sub>T</sub>",
+                "代入 -S = (∂G/∂T)<sub>P</sub> 和 V = (∂G/∂P)<sub>T</sub>, 得到:",
+                "<strong>-(∂S/∂P)<sub>T</sub> = (∂V/∂T)<sub>P</sub></strong>"
+            ]
+        }
+    };
+    
+    const maxwellBtns = document.querySelectorAll('.maxwell-btn');
+    const maxwellDetailsEl = document.getElementById('maxwell-details');
+    
+    maxwellBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const potentialKey = btn.dataset.potential;
+            const data = maxwellData[potentialKey];
+            
+            maxwellBtns.forEach(b => {
+                b.classList.remove('bg-teal-600', 'text-white');
+                b.classList.add('bg-white', 'text-teal-700');
+            });
+            btn.classList.add('bg-teal-600', 'text-white');
+            btn.classList.remove('bg-white', 'text-teal-700');
+
+            let html = `<h3 class="text-2xl font-bold text-teal-700 mb-4">${data.title}</h3><div class="space-y-3">`;
+            data.steps.forEach((step, index) => {
+                html += `<div class="p-3 bg-slate-50 rounded-lg derivation-step" style="transition-delay: ${index * 150}ms">${step}</div>`;
+            });
+            html += `</div>`;
+            maxwellDetailsEl.innerHTML = html;
+
+            setTimeout(() => {
+                const steps = maxwellDetailsEl.querySelectorAll('.derivation-step');
+                steps.forEach(s => {
+                    s.style.opacity = '1';
+                    s.style.transform = 'translateY(0)';
+                });
+            }, 50);
+        });
+    });
+
+    let heatCapacityChartInstance = null;
+    function renderHeatCapacityChart() {
+        if (heatCapacityChartInstance) {
+            heatCapacityChartInstance.destroy();
+        }
+        const ctx = document.getElementById('heatCapacityChart').getContext('2d');
+        heatCapacityChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Cᵥ (定容)', 'Cₚ (定压)'],
+                datasets: [{
+                    label: '热容比较',
+                    data: [12.47, 20.78],
+                    backgroundColor: [
+                        'rgba(56, 189, 248, 0.6)',
+                        'rgba(13, 148, 136, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(56, 189, 248, 1)',
+                        'rgba(13, 148, 136, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y + ' J/(mol·K)';
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '通常 Cₚ > Cᵥ (以理想气体He为例)'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'J / (mol·K)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const derivations = {
+        dSp: {
+            title: "推导 (∂S/∂P)<sub>T</sub>",
+            steps: [
+                "目标: 将 (∂S/∂P)<sub>T</sub> 用可测量表示。",
+                "思路: 利用麦克斯韦关系。我们寻找一个包含 dP 和 dT 项的热力学势。",
+                "选择吉布斯自由能 G，其基本方程为: dG = -SdT + VdP。",
+                "根据麦克斯韦关系 (源于G): -(∂S/∂P)<sub>T</sub> = (∂V/∂T)<sub>P</sub>。",
+                "移项可得: (∂S/∂P)<sub>T</sub> = -(∂V/∂T)<sub>P</sub>。",
+                "我们知道热膨胀系数 α = (1/V)(∂V/∂T)<sub>P</sub>，因此 (∂V/∂T)<sub>P</sub> = Vα。",
+                "最终结果: <strong>(∂S/∂P)<sub>T</sub> = -Vα</strong>"
+            ]
+        },
+        dSv: {
+            title: "推导 (∂S/∂V)<sub>T</sub>",
+            steps: [
+                "目标: 将 (∂S/∂V)<sub>T</sub> 用可测量表示。",
+                "思路: 利用麦克斯韦关系。我们寻找一个包含 dV 和 dT 项的热力学势。",
+                "选择亥姆霍兹自由能 F，其基本方程为: dF = -SdT - PdV。",
+                "根据麦克斯韦关系 (源于F): (∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub>。",
+                "利用循环关系 (∂P/∂T)<sub>V</sub>(∂T/∂V)<sub>P</sub>(∂V/∂P)<sub>T</sub> = -1, 可得 (∂P/∂T)<sub>V</sub> = -(∂V/∂T)<sub>P</sub> / (∂V/∂P)<sub>T</sub>。",
+                "代入 α 和 κ<sub>T</sub> 的定义: (∂V/∂T)<sub>P</sub> = Vα, (∂V/∂P)<sub>T</sub> = -Vκ<sub>T</sub>。",
+                "所以 (∂P/∂T)<sub>V</sub> = -(Vα) / (-Vκ<sub>T</sub>) = α / κ<sub>T</sub>。",
+                "最终结果: <strong>(∂S/∂V)<sub>T</sub> = α / κ<sub>T</sub></strong>"
+            ]
+        },
+        dUv: {
+            title: "推导 (∂U/∂V)<sub>T</sub> (内压)",
+            steps: [
+                "目标: 将 (∂U/∂V)<sub>T</sub> 用可测量表示。",
+                "从内能基本方程 dU = TdS - PdV 出发。",
+                "两边同除以 dV 并保持 T 恒定: (∂U/∂V)<sub>T</sub> = T(∂S/∂V)<sub>T</sub> - P。",
+                "我们已经知道 (∂S/∂V)<sub>T</sub> 的麦克斯韦关系 (源于F): (∂S/∂V)<sub>T</sub> = (∂P/∂T)<sub>V</sub>。",
+                "代入得到: (∂U/∂V)<sub>T</sub> = T(∂P/∂T)<sub>V</sub> - P。",
+                "从 (∂S/∂V)<sub>T</sub> 的推导中可知 (∂P/∂T)<sub>V</sub> = α / κ<sub>T</sub>。",
+                "最终结果: <strong>(∂U/∂V)<sub>T</sub> = T(α/κ<sub>T</sub>) - P</strong>"
+            ]
+        },
+        dUp: {
+            title: "推导 (∂U/∂P)<sub>T</sub>",
+            steps: [
+                "目标: 将 (∂U/∂P)<sub>T</sub> 用可测量表示。",
+                "思路: 使用链式法则 (∂U/∂P)<sub>T</sub> = (∂U/∂V)<sub>T</sub> (∂V/∂P)<sub>T</sub>。",
+                "我们已经推导出内压 (∂U/∂V)<sub>T</sub> = T(α/κ<sub>T</sub>) - P。",
+                "根据定义，等温压缩率 κ<sub>T</sub> = -(1/V)(∂V/∂P)<sub>T</sub>, 所以 (∂V/∂P)<sub>T</sub> = -Vκ<sub>T</sub>。",
+                "将两部分相乘: (∂U/∂P)<sub>T</sub> = [T(α/κ<sub>T</sub>) - P] * (-Vκ<sub>T</sub>)。",
+                "展开得到: (∂U/∂P)<sub>T</sub> = -T(α/κ<sub>T</sub>)Vκ<sub>T</sub> + PVκ<sub>T</sub>。",
+                "最终结果: <strong>(∂U/∂P)<sub>T</sub> = PVκ<sub>T</sub> - TVα</strong>"
+            ]
+        }
+    };
+
+    const deriveBtn = document.getElementById('derive-btn');
+    const derivativeSelect = document.getElementById('derivative-select');
+    const derivationOutput = document.getElementById('derivation-output');
+
+    deriveBtn.addEventListener('click', () => {
+        const selected = derivativeSelect.value;
+        const data = derivations[selected];
+        
+        let html = `<h3 class="text-2xl font-bold text-teal-700 mb-4">${data.title}</h3><div class="space-y-3">`;
+        data.steps.forEach((step, index) => {
+            html += `<div class="p-3 bg-slate-50 rounded-lg derivation-step" style="transition-delay: ${index * 150}ms">${step}</div>`;
+        });
+        html += `</div>`;
+        derivationOutput.innerHTML = html;
+        
+        setTimeout(() => {
+            const steps = derivationOutput.querySelectorAll('.derivation-step');
+            steps.forEach(s => {
+                s.style.opacity = '1';
+                s.style.transform = 'translateY(0)';
+            });
+        }, 50);
+    });
+});
+</script>
+
+</body>
+</html>

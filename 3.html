@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复变函数交互式探索指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+        xintegrity="sha384-n8MVd4RsNIU0KOVEMeaOVTGsevSAPxdSpSDBOTGksZSpvC0iYJE9gFSzBdc72LDq" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+        xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05"
+        crossorigin="anonymous"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A non-linear "Concept Explorer" SPA. The structure uses a fixed left-side navigation panel for quick topic selection and a dynamic main content area on the right. This design prioritizes user-driven exploration over a passive, linear reading experience. Key interactions include tabbed views for theorems (separating statement, proof, and application), toggleable content for complex derivations, and an interactive concept map to visualize the relationships between different theories. This structure was chosen to make the dense, interconnected information of complex analysis more digestible and engaging for learners and researchers, allowing them to either get a high-level overview or dive deep into specific areas of interest. -->
+    <!-- Visualization & Content Choices: 
+        - Core Theorems (Cauchy, Residue): Presented in a tabbed interface (HTML/JS) to separate the formal statement, the proof, and applications. Goal: Organize & Inform. Interaction: Clicking tabs. This breaks down dense topics into manageable parts.
+        - Singularity Types: Displayed as interactive cards (HTML/CSS/JS). Goal: Compare. Interaction: Hover/click to reveal details. This provides a quick, visual comparison.
+        - Saddle Point Method: Explained via a step-by-step interactive diagram (HTML/CSS/JS). Goal: Explain Process. Interaction: Clicking steps to expand. This clarifies a complex workflow.
+        - Concept Relationships: An interactive concept map (HTML/CSS/JS) where nodes are theorems and edges show dependencies. Goal: Show Relationships. Interaction: Hover/click nodes. This provides a "wow factor" and a powerful overview of the subject's structure.
+        - Mathematical Formulas: Rendered using KaTeX library for clarity and professionalism. Goal: Inform.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #fdfcfb;
+            color: #333;
+        }
+
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5em 0;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link.active {
+            background-color: #e7e5e4;
+            border-left-color: #a16207;
+            color: #a16207;
+            font-weight: 600;
+        }
+
+        .nav-link:hover {
+            background-color: #f5f5f4;
+            border-left-color: #ca8a04;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .tab-button.active {
+            border-bottom-color: #a16207;
+            color: #a16207;
+            font-weight: 600;
+        }
+
+        .proof-toggle {
+            cursor: pointer;
+            background-color: #f5f5f4;
+            border: 1px solid #e7e5e4;
+        }
+
+        .proof-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+
+        .concept-map-node {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .concept-map-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            z-index: 10;
+        }
+
+        .concept-map-line {
+            position: absolute;
+            background-color: #d6d3d1;
+            z-index: -1;
+        }
+    </style>
+</head>
+
+<body class="bg-stone-50 text-stone-800">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar"
+            class="w-full md:w-64 lg:w-72 bg-stone-100 border-r border-stone-200 p-4 md:fixed md:h-full overflow-y-auto">
+            <h1 class="text-xl font-bold text-yellow-800 mb-6">复变函数探索指南</h1>
+            <nav id="main-nav">
+                <ul>
+                    <li><a href="#introduction" class="nav-link block p-2 my-1 rounded-r-md">I. 引言</a></li>
+                    <li><a href="#basics" class="nav-link block p-2 my-1 rounded-r-md">II. 基础概念</a></li>
+                    <li><a href="#core-theorems" class="nav-link block p-2 my-1 rounded-r-md">III. 核心定理</a></li>
+                    <li><a href="#laurent-series" class="nav-link block p-2 my-1 rounded-r-md">IV. 洛朗级数与奇点</a></li>
+                    <li><a href="#residue-theorem" class="nav-link block p-2 my-1 rounded-r-md">V. 留数定理与应用</a></li>
+                    <li><a href="#saddle-point" class="nav-link block p-2 my-1 rounded-r-md">VI. 鞍点法</a></li>
+                    <li><a href="#other-methods" class="nav-link block p-2 my-1 rounded-r-md">VII. 其他计算方法</a></li>
+                    <li><a href="#concept-map" class="nav-link block p-2 my-1 rounded-r-md">VIII. 概念关系图</a></li>
+                    <li><a href="#full-report" class="nav-link block p-2 my-1 rounded-r-md">IX. 完整报告</a></li>
+                    <li><a href="index.html" class="nav-link2 block w-full text-left px-4 py-2 rounded-lg">X. 个人主页</a></li>
+                    </p>
+                    <a id="cy-effective-orcid-url" class="underline" href="https://orcid.org/0009-0007-2600-0948"
+                        target="orcid.widget" rel="me noopener noreferrer" style="vertical-align: top">
+                        <img src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
+                            style="width: 1em; margin-inline-start: 0.5em" alt="ORCID iD icon" />
+                        <!-- https://orcid.org/0009-0007-2600-0948 -->
+                    </a>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 md:ml-64 lg:ml-72 p-6 md:p-10">
+            <div id="content-container">
+                <!-- Section: Introduction -->
+                <section id="introduction" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">I. 引言</h2>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>欢迎来到复变函数交互式探索指南。本应用旨在将复杂的复变函数理论转化为一个直观、易于导航的学习工具。复变函数论不仅是纯粹数学的优美分支，更在物理、工程等众多领域扮演着不可或缺的角色。它将一维的实数轴扩展至二维复平面，为函数赋予了深刻的几何与代数结构。
+                        </p>
+                        <p>在这里，您可以通过左侧导航栏自由探索核心概念，从柯西-黎曼方程到强大的留数定理，再到高级的鞍点法。每个主题都经过精心组织，通过交互式元素（如选项卡、可展开的证明、应用案例）来呈现，帮助您建立清晰的知识框架。最后的“概念关系图”更是将所有理论串联起来，直观地展示它们之间的逻辑依赖关系。希望这次探索之旅能让您领略到复变函数论的魅力与力量。
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Section: Basics -->
+                <section id="basics" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">II. 基础概念</h2>
+                    <p class="mb-6 text-lg">
+                        复变函数论建立在复数、复平面以及复可微性（全纯性）等基本概念之上。理解这些基础是掌握后续高级理论的关键。本节将介绍柯西-黎曼方程，它是判断一个函数是否为全纯函数的核心工具。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">柯西-黎曼方程</h3>
+                        <p class="mb-4">一个复函数 $f(z) = u(x, y) + iv(x, y)$ 在一点 $z_0$ 处复可微的必要条件是，其实部 $u$ 和虚部 $v$
+                            的偏导数满足柯西-黎曼方程。如果偏导数还连续，那么该条件也是充分的。</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4">
+                            <div class="text-xl">$\frac{\partial u}{\partial x} = \frac{\partial v}{\partial y} \quad
+                                \text{且} \quad \frac{\partial u}{\partial y} = -\frac{\partial v}{\partial x}$</div>
+                        </div>
+                        <div class="mt-6">
+                            <div class="proof-toggle p-3 rounded-md font-semibold text-yellow-800 hover:bg-yellow-100"
+                                onclick="toggleProof('cr-proof')">
+                                <span>▶</span> 点击展开/折叠严谨推导
+                            </div>
+                            <div id="cr-proof" class="proof-content border-l-4 border-yellow-700 pl-4 mt-2">
+                                <p class="mt-4 font-semibold">推导思路：</p>
+                                <p>复导数的定义是 $f'(z_0) = \lim_{\Delta z \to 0} \frac{f(z_0 + \Delta z) - f(z_0)}{\Delta
+                                    z}$。由于极限必须沿任何路径都存在且唯一，我们选择两条特殊的路径（沿实轴和沿虚轴）来计算极限，并令结果相等。</p>
+                                <p class="mt-2 font-semibold">1. 沿实轴趋近 ($\Delta z = \Delta x$):</p>
+                                <div class="text-lg"> $f'(z_0) = \frac{\partial u}{\partial x} + i \frac{\partial
+                                    v}{\partial x}$ </div>
+                                <p class="mt-2 font-semibold">2. 沿虚轴趋近 ($\Delta z = i\Delta y$):</p>
+                                <div class="text-lg"> $f'(z_0) = \frac{\partial v}{\partial y} - i \frac{\partial
+                                    u}{\partial y}$ </div>
+                                <p class="mt-2 font-semibold">令两式相等，比较实部和虚部，即可得到柯西-黎曼方程。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Core Theorems -->
+                <section id="core-theorems" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">III. 核心定理</h2>
+                    <p class="mb-6 text-lg">柯西积分定理与柯西积分公式是复分析的基石。它们揭示了全纯函数惊人的“刚性”：函数在边界上的值完全决定了其内部所有点的值及其任意阶导数的值。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="border-b border-stone-200 mb-4">
+                            <nav class="flex space-x-4" aria-label="Tabs">
+                                <button class="tab-button py-2 px-4 border-b-2 border-transparent"
+                                    data-target="cauchy-integral-theorem">柯西积分定理</button>
+                                <button class="tab-button py-2 px-4 border-b-2 border-transparent"
+                                    data-target="cauchy-integral-formula">柯西积分公式</button>
+                            </nav>
+                        </div>
+                        <div id="cauchy-integral-theorem" class="tab-content">
+                            <h3 class="text-2xl font-semibold mb-2 text-yellow-900">柯西积分定理</h3>
+                            <p class="mb-4">若函数 $f(z)$ 在单连通区域 $D$ 内全纯，则对于 $D$ 内任意一条简单闭曲线 $\gamma$，有：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz =
+                                0$ </div>
+                            <p>这个定理意味着在单连通区域内，全纯函数的积分与路径无关，只取决于起点和终点。</p>
+                        </div>
+                        <div id="cauchy-integral-formula" class="tab-content hidden">
+                            <h3 class="text-2xl font-semibold mb-2 text-yellow-900">柯西积分公式</h3>
+                            <p class="mb-4">若 $f(z)$ 在区域 $D$ 内全纯，$\gamma$ 是 $D$ 内一条包围点 $a$ 的简单闭曲线，则：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $f(a) = \frac{1}{2\pi i}
+                                \oint_{\gamma} \frac{f(z)}{z-a} dz$ </div>
+                            <p class="font-semibold mt-4">高阶导数公式：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $f^{(n)}(a) =
+                                \frac{n!}{2\pi i} \oint_{\gamma} \frac{f(z)}{(z-a)^{n+1}} dz$ </div>
+                            <p>此公式是复分析最强大的结果之一，它表明全纯函数必然是无限次可微的。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Laurent Series -->
+                <section id="laurent-series" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">IV. 洛朗级数与奇点分类
+                    </h2>
+                    <p class="mb-6 text-lg">洛朗级数是泰勒级数的推广，它允许我们分析函数在奇点附近的行为。通过观察洛朗级数中负幂项的特征，我们可以对孤立奇点进行精确分类。</p>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">可去奇点</h3>
+                            <p>洛朗级数中不含负幂项 ($a_n=0$ for $n<0$)。函数在奇点处的极限存在，可以通过补充定义使函数在该点全纯。< /p>
+                                    <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $\frac{\sin z}{z} = 1
+                                        - \frac{z^2}{3!} + \dots$</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">极点</h3>
+                            <p>洛朗级数中含有有限个负幂项。若最低次幂为 $-m$，则称为 $m$ 阶极点。函数在极点处趋于无穷。</p>
+                            <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $\frac{e^z}{(z-1)^2}$ 在 $z=1$
+                                有2阶极点。</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">本质奇点</h3>
+                            <p>洛朗级数中含有无限个负幂项。函数在本质奇点附近的行为极其复杂，会取遍几乎所有复数值。</p>
+                            <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $e^{1/z} = 1 + \frac{1}{z} +
+                                \frac{1}{2!z^2} + \dots$</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Residue Theorem -->
+                <section id="residue-theorem" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">V. 留数定理与应用
+                    </h2>
+                    <p class="mb-6 text-lg">留数定理是计算围道积分的终极武器，它将复杂的积分问题简化为计算被积函数在奇点处的“留数”之和。留数即洛朗级数中 $(z-z_0)^{-1}$ 项的系数
+                        $a_{-1}$。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">留数定理</h3>
+                        <p class="mb-4">若函数 $f(z)$ 在简单闭曲线 $\gamma$ 内部及边界上除有限个孤立奇点 $a_1, \dots, a_n$ 外全纯，则：</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 2\pi
+                            i \sum_{k=1}^{n} \operatorname{Res}(f, a_k)$ </div>
+
+                        <div class="mt-6">
+                            <h4 class="text-xl font-semibold mb-2 text-yellow-900">应用：计算实积分</h4>
+                            <p>留数定理最令人惊叹的应用之一是计算难以处理的实积分。基本思想是将实积分问题转化为复平面上的围道积分。</p>
+                            <div class="bg-stone-50 p-4 mt-4 rounded-lg">
+                                <p class="font-semibold">示例：计算 $\int_{-\infty}^{\infty} \frac{1}{x^2+1} dx$</p>
+                                <ol class="list-decimal list-inside mt-2 space-y-2">
+                                    <li>构造复函数 $f(z) = \frac{1}{z^2+1}$ 和上半平面的半圆围道。</li>
+                                    <li>$f(z)$ 在上半平面的唯一奇点是 $z=i$ (简单极点)。</li>
+                                    <li>计算留数: $\operatorname{Res}(f, i) = \lim_{z \to i} (z-i)\frac{1}{(z-i)(z+i)} =
+                                        \frac{1}{2i}$。</li>
+                                    <li>应用留数定理: $\oint f(z)dz = 2\pi i \cdot \frac{1}{2i} = \pi$。</li>
+                                    <li>证明半圆弧上的积分为0，故原积分为 $\pi$。</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Saddle Point -->
+                <section id="saddle-point" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VI. 鞍点法（最速下降法）
+                    </h2>
+                    <p class="mb-6 text-lg">鞍点法是用于近似估计形如 $I(\lambda) = \int_C f(z)e^{\lambda g(z)} dz$ 且 $\lambda \to
+                        \infty$ 的积分的强大渐近分析技术。其核心思想是，积分的主要贡献来自于 $g(z)$ 的鞍点（即 $g'(z_0)=0$ 的点）附近。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">核心步骤</h3>
+                        <div
+                            class="relative flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                            <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">①</div>
+                                <h4 class="font-semibold">寻找鞍点</h4>
+                                <p class="text-sm">求解 $g'(z)=0$ 找到鞍点 $z_0$。</p>
+                            </div>
+                            <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                            <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">②</div>
+                                <h4 class="font-semibold">路径形变</h4>
+                                <p class="text-sm">将积分路径 $C$ 变形为通过 $z_0$ 的最速下降路径。</p>
+                            </div>
+                            <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                            <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">③</div>
+                                <h4 class="font-semibold">局部近似</h4>
+                                <p class="text-sm">在 $z_0$ 附近对 $g(z)$ 做二次近似，将积分化为高斯积分。</p>
+                            </div>
+                            <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                            <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">④</div>
+                                <h4 class="font-semibold">计算积分</h4>
+                                <p class="text-sm">得到积分的渐近表达式。</p>
+                            </div>
+                        </div>
+                        <p class="mt-6">对于非退化鞍点，积分的渐近主项为：</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-lg">
+                            $I(\lambda) \approx \sqrt{\frac{2\pi}{-\lambda g''(z_0)}} f(z_0) e^{\lambda g(z_0)}$
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Other Methods -->
+                <section id="other-methods" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VII. 其他计算方法
+                    </h2>
+                    <p class="mb-6 text-lg">除了上述核心理论，复分析还提供了多种强大的工具，用于解决特定类型的问题，如计数零点、求解边界值问题和分析线性系统。</p>
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">幅角原理与鲁歇定理</h3>
+                            <p>这两个定理是计算区域内函数零点和极点数目的利器。幅角原理将零点和极点数目与函数沿边界的辐角变化联系起来，而鲁歇定理则通过比较两个函数的大小来判断它们是否有相同数量的零点，常用于代数方程求根。
+                            </p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">共形映射</h3>
+                            <p>共形映射是一种保持角度不变的复变函数变换。它能够将复杂形状的区域映射为简单的区域（如单位圆或上半平面），从而极大地简化了流体力学、静电学和热传导等领域的偏微分方程边界值问题的求解。
+                            </p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">傅里叶变换与拉普拉斯变换</h3>
+                            <p>这两种积分变换是信号处理和控制理论的基石。它们将时域中的函数（或信号）转换到频域或复频域，使得微分方程变为代数方程，从而简化分析。留数定理在计算它们的逆变换时起着至关重要的作用。
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Concept Map -->
+                <section id="concept-map" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VIII. 概念关系图
+                    </h2>
+                    <p class="mb-6 text-lg">
+                        复变函数论的各个概念和定理并非孤立存在，而是紧密相连、层层递进的。下图通过可视化的方式展示了它们之间的逻辑依赖关系。您可以点击节点以跳转到相应章节进行深入学习。</p>
+                    <div id="map-container"
+                        class="relative w-full h-[600px] bg-white rounded-lg shadow-inner border border-stone-200 overflow-auto">
+                        <!-- Nodes will be injected by JS -->
+                        <!-- Lines will be injected by JS -->
+                    </div>
+                </section>
+
+                <!-- Section: Full Report -->
+                <section id="full-report" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">IX. 完整报告</h2>
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4">I. 引言</h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>复变函数论，作为数学的一个重要分支，深入探讨了复数域上的函数性质。它不仅在纯粹数学领域展现出其固有的美感与深刻性，更在物理学、工程学、信号处理、流体力学、量子力学等众多应用科学领域发挥着不可替代的作用，能够解决实分析中难以处理的问题
+                            [1, 2, 3, 4]。其核心在于将一维实数轴的概念扩展至二维复平面，从而赋予函数以更为丰富的代数与几何结构。</p>
+                        <p>本报告旨在为读者提供一个关于复变函数论中核心概念、基本定理、高级渐近方法（特别是鞍点法）以及其他重要计算工具的全面、详细且严谨的阐述。报告将从复数与复平面的基础概念入手，逐步深入到柯西积分定理、柯西积分公式、留数定理等核心理论的严谨推导，并详细介绍洛朗级数在奇点分类中的应用。随后，将重点剖析鞍点法的原理、推导过程、典型应用及其局限性。最后，报告将简要介绍幅角原理、鲁歇定理、共形映射以及傅里叶变换与拉普拉斯变换等其他常用计算方法，并探讨它们在科学与工程领域的广泛应用。本报告的目标是提供一个深入的、具有坚实数学基础的复变函数论知识体系，以满足对该领域有高精度和严谨性要求的研究人员和专业人士的需求。
+                        </p>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4 mt-8">II.
+                        复变函数基础概念</h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>复变函数论的构建始于对复数及其几何表示的深刻理解，并在此基础上引入了复可微性这一核心概念，从而定义了全纯函数。这些基础概念是理解后续所有高级理论和计算方法的基石。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">复数与复平面</h4>
+                        <p>复数是实数的扩展，通过引入虚数单位 $i$（定义为 $i^2 = -1$）将一维数轴的概念扩展到二维的复平面。这种二维的几何表示，也称为阿尔冈图或高斯平面，使得复数 $z = x +
+                            iy$ 可以被直观地看作笛卡尔坐标系中的点 $(x, y)$，其中 $x$ 为实部， $y$ 为虚部 [5, 6]。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">复数的几何表示与基本运算</h5>
+                        <p>复数的几何表示为理解其运算提供了直观的视角。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>加法与减法</strong>：复数的加法和减法与向量的加法和减法类似。例如，两个复数 $z_1 = a + bi$ 和 $z_2 = c + di$ 的和为
+                                $(a+c) + (b+d)i$。在复平面上，这相当于两个向量首尾相接的合成 [5, 6]。</li>
+                            <li><strong>乘法</strong>：复数的乘法在极坐标形式下表现得最为简洁和直观。一个复数 $z$ 可以表示为 $z = |z|(\cos \theta + i \sin
+                                \theta) = |z|e^{i\theta}$，其中 $|z| = \sqrt{x^2 + y^2}$ 是复数的模长（从原点到该点的距离），$\theta$
+                                是辐角（与正实轴的夹角）[5, 6]。当两个复数 $z_1 = r_1 e^{i\theta_1}$ 和 $z_2 = r_2 e^{i\theta_2}$ 相乘时，它们的积为
+                                $z_1 z_2 = (r_1 r_2)e^{i(\theta_1 + \theta_2)}$。这意味着乘积的模长是两个复数模长的乘积，而乘积的辐角是两个复数辐角的和 [5,
+                                6]。特别是，与模长为1的复数相乘，几何上表示为一个旋转 [5]。这种几何解释揭示了复数运算的深层结构，将看似复杂的代数运算转化为直观的几何变换。</li>
+                            <li><strong>除法</strong>：复数的除法同样在极坐标下更为简单：$(r_1 e^{i\theta_1}) / (r_2 e^{i\theta_2}) = (r_1 /
+                                r_2)e^{i(\theta_1 - \theta_2)}$，即模长相除，辐角相减 [6]。</li>
+                        </ul>
+                        <p>复数表示与运算的这种代数与几何的统一，是复变函数论强大威力的源泉。例如，在极坐标下，复数的乘法和除法变得异常简单，这对于理解复变函数的保角性（共形性）和积分变换至关重要。这种代数和几何的桥接，使得许多在实数域中难以处理的问题在复数域中迎刃而解。
+                        </p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">复平面拓扑概念</h5>
+                        <p>复平面 $\mathbb{C}$ 不仅是复数的几何表示空间，它还具有丰富的拓扑结构，这对于定义复变函数的连续性、可微性以及积分性质至关重要。将复数域 $\mathbb{C}$
+                            视为一个二维实线性空间，并定义距离 $d(z, w) = |z - w|$ 后，$\mathbb{C}$
+                            成为了一个度量空间，从而可以引入极限和连续性的概念。复数的加法、乘法和除法都是连续运算 [6]。</p>
+                        <p>重要的拓扑概念包括：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>开集与区域</strong>：开集是复平面中不包含其边界点的集合，而区域是连通的开集。这些概念是定义全纯函数（复可微函数）的基础。</li>
+                            <li><strong>闭曲线与围道积分</strong>：在复分析中，沿着闭曲线的积分方向至关重要。通常，逆时针方向被定义为“正方向”，沿着相反方向所得的积分值会乘以 -1 [5]。
+                            </li>
+                            <li><strong>黎曼球面（扩充复平面）</strong>：为了统一处理无穷远处的函数行为，复平面可以通过球极平面投影扩展为一个黎曼球面。球面上的北极点对应于复平面上的“无穷远点”，从而形成扩充复平面
+                                [5, 7]。这种紧致化处理使得某些在有限复平面上表现出不同性质的函数（如多项式和有理函数）能够在黎曼球面上得到统一的分析。</li>
+                            <li><strong>分支割线与黎曼曲面</strong>：对于多值函数（如平方根函数 $w = \sqrt{z}$ 或对数函数 $\log
+                                z$），为了将其定义为单值函数，需要在复平面上引入“分支割线”（branch cut）。这些割线从“分支点”（branch point，如
+                                $z=0$）延伸至无穷远，以防止围绕分支点的完整回路，从而避免函数值的不连续性 [5,
+                                8]。通过将多个切割的复平面“黏合”在一起，可以构造出黎曼曲面，使得多值函数在这些曲面上成为单值且全纯的函数
+                                [5]。这种拓扑结构上的精巧设计，使得复变函数论能够处理那些在实数域中无法连续定义的函数，从而极大地扩展了分析的范围。柯西积分定理等核心定理的有效性，正是建立在区域的单连通性（即没有“洞”）等拓扑属性之上
+                                [9, 10]。这种拓扑结构与分析性质的紧密结合，是复变函数论独有的强大之处。</li>
+                        </ul>
+                        <p>以下表格总结了复数的不同表示形式及其基本运算：</p>
+                        <div class="overflow-x-auto my-4">
+                            <table class="min-w-full bg-stone-100 border border-stone-200 rounded-lg">
+                                <thead>
+                                    <tr>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">表示形式</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">表达式</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">模长 $|z|$</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">辐角 $\arg(z)$</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">优点</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>笛卡尔 (直角) 形式</strong>
+                                        </td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$z = x + iy$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$\sqrt{x^2 + y^2}$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$\arctan(y/x)$ (需根据象限调整)</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">加减法简单直观</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>极坐标形式</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$z = r(\cos\theta +
+                                            i\sin\theta)$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$r$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$\theta$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">乘除法、幂运算和开方简单</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>指数形式</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$z = re^{i\theta}$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$r$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$\theta$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">乘除法、幂运算和开方最简洁，与极坐标形式等价</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto my-4">
+                            <table class="min-w-full bg-stone-100 border border-stone-200 rounded-lg">
+                                <thead>
+                                    <tr>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">运算类型</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">笛卡尔形式 $(z_1=x_1+iy_1,
+                                            z_2=x_2+iy_2)$</th>
+                                        <th class="py-2 px-4 border-b border-stone-200 text-left">极坐标/指数形式
+                                            $(z_1=r_1e^{i\theta_1}, z_2=r_2e^{i\theta_2})$</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>加法</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$(x_1+x_2) + i(y_1+y_2)$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">不常用，需转换为笛卡尔形式</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>减法</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$(x_1-x_2) + i(y_1-y_2)$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">不常用，需转换为笛卡尔形式</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>乘法</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$(x_1x_2-y_1y_2) +
+                                            i(x_1y_2+x_2y_1)$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$r_1r_2e^{i(\theta_1+\theta_2)}$
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>除法</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">
+                                            $\frac{x_1x_2+y_1y_2}{x_2^2+y_2^2} + i\frac{y_1x_2-x_1y_2}{x_2^2+y_2^2}$
+                                        </td>
+                                        <td class="py-2 px-4 border-b border-stone-200">
+                                            $\frac{r_1}{r_2}e^{i(\theta_1-\theta_2)}$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>共轭</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$x-iy$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$re^{-i\theta}$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 px-4 border-b border-stone-200"><strong>模长</strong></td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$\sqrt{x^2+y^2}$</td>
+                                        <td class="py-2 px-4 border-b border-stone-200">$r$</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">复变函数与全纯函数</h4>
+                        <p>复变函数是将复平面上的一个子集映射到复平面上另一个子集的函数。通常，自变量 $z$ 位于 $z$-平面，而函数值 $f(z)$ 位于 $w$-平面 [5]。一个复变函数 $f(z)$
+                            可以分解为实部 $u(x, y)$ 和虚部 $v(x, y)$，即 $f(z) = u(x, y) + iv(x, y)$，其中 $u$ 和 $v$ 都是实变量 $x$ 和 $y$
+                            的实值函数 [1]。这种分解方式将一个复函数转化为一对耦合的实函数，为连接复可微性与实偏导数奠定了基础。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">复可微性与柯西-黎曼方程的严格推导</h5>
+                        <p>复可微性是复变函数论的基石，其定义与实函数的可微性类似，但具有更强的性质。一个复函数 $f$ 在区域 $U$ 中的一点 $z_0$
+                            处是<strong>复可微的</strong>（或称全纯的），当且仅当以下极限存在且唯一 [11]：</p>
+                        <div class="text-center my-4 text-xl"> $f'(z_0) = \lim_{z \to z_0} \frac{f(z) - f(z_0)}{z -
+                            z_0}$ </div>
+                        <p>这个极限必须沿着任何趋向 $z_0$ 的复数列都趋向同一个数 $f'(z_0)$
+                            [11]。这是复可微性与实可微性之间最显著的区别之一，因为实函数只需要沿着实轴的两个方向（左极限和右极限）趋近即可。</p>
+                        <p>为了严谨地推导柯西-黎曼方程，我们假设 $f(z) = u(x, y) + iv(x, y)$ 在 $z_0 = x_0 + iy_0$
+                            处复可微。这意味着上述极限存在。我们可以通过两种不同的路径来计算这个极限，并令结果相等 [12]。</p>
+                        <p class="font-semibold mt-2">1. 沿实轴趋近 ($\Delta z = \Delta x$):</p>
+                        <div class="bg-stone-50 p-4 rounded-md my-2">
+                            <pre
+                                class="text-sm overflow-x-auto">$f'(z_0) = \lim_{h \to 0} \frac{f(x_0 + h + iy_0) - f(x_0 + iy_0)}{h}$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= \lim_{h \to 0} \frac{[u(x_0+h, y_0) + iv(x_0+h, y_0)] - [u(x_0, y_0) + iv(x_0, y_0)]}{h}$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= \lim_{h \to 0} \left( \frac{u(x_0+h, y_0) - u(x_0, y_0)}{h} + i \frac{v(x_0+h, y_0) - v(x_0, y_0)}{h} \right)$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= \frac{\partial u}{\partial x}(x_0, y_0) + i \frac{\partial v}{\partial x}(x_0, y_0)$</pre>
+                        </div>
+                        <p>这表明 $u$ 和 $v$ 关于 $x$ 的偏导数在 $(x_0, y_0)$ 处存在 [12]。</p>
+                        <p class="font-semibold mt-2">2. 沿虚轴趋近 ($\Delta z = i\Delta y$):</p>
+                        <div class="bg-stone-50 p-4 rounded-md my-2">
+                            <pre
+                                class="text-sm overflow-x-auto">$f'(z_0) = \lim_{k \to 0} \frac{f(x_0 + i(y_0 + k)) - f(x_0 + iy_0)}{ik}$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= \lim_{k \to 0} \frac{[u(x_0, y_0+k) + iv(x_0, y_0+k)] - [u(x_0, y_0) + iv(x_0, y_0)]}{ik}$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= \lim_{k \to 0} \left( -i \frac{u(x_0, y_0+k) - u(x_0, y_0)}{k} + \frac{v(x_0, y_0+k) - v(x_0, y_0)}{k} \right)$</pre>
+                            <pre
+                                class="text-sm overflow-x-auto">$= -i \frac{\partial u}{\partial y}(x_0, y_0) + \frac{\partial v}{\partial y}(x_0, y_0)$</pre>
+                        </div>
+                        <p>这表明 $u$ 和 $v$ 关于 $y$ 的偏导数在 $(x_0, y_0)$ 处存在 [12]。</p>
+                        <p>由于 $f'(z_0)$ 必须是唯一的，因此这两种路径得到的极限值必须相等：</p>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial u}{\partial x} + i \frac{\partial
+                            v}{\partial x} = \frac{\partial v}{\partial y} - i \frac{\partial u}{\partial y}$ </div>
+                        <p>通过比较等式两边的实部和虚部，我们得到了著名的<strong>柯西-黎曼方程</strong> [1, 12, 13, 14]：</p>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial u}{\partial x} = \frac{\partial
+                            v}{\partial y}$ </div>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial v}{\partial x} = -\frac{\partial
+                            u}{\partial y}$ </div>
+                        <p>柯西-黎曼方程是复变函数 $f(z)$ 在一点处复可微的必要条件 [13, 14]。如果 $u(x, y)$ 和 $v(x, y)$
+                            的偏导数存在且连续，那么柯西-黎曼方程也是复可微的充分条件 [13]。这些方程揭示了复可微函数实部和虚部之间的内在联系，它们是复分析中解析函数理论的基石
+                            [14]。通过这些方程，如果已知全纯函数的实部或虚部之一，在给定初始条件下，可以求解出另一个部分 [1]。</p>
+                        <p>此外，柯西-黎曼方程也可以用<strong>Wirtinger 导数</strong>的形式表示，这在多复变函数论中尤为方便 [13, 15]。定义 Wirtinger 导数为：</p>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial}{\partial z} = \frac{1}{2} \left(
+                            \frac{\partial}{\partial x} - i \frac{\partial}{\partial y} \right)$ </div>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial}{\partial \bar{z}} = \frac{1}{2} \left(
+                            \frac{\partial}{\partial x} + i \frac{\partial}{\partial y} \right)$ </div>
+                        <p>那么柯西-黎曼方程可以简洁地写成一个方程：$\frac{\partial f}{\partial \bar{z}} = 0$。在这种形式下，复变函数 $f(z)$ 的复导数就是
+                            $\frac{\partial f}{\partial z}$ [13]。这表明解析函数只依赖于 $z$ 而与 $\bar{z}$
+                            无关，从而将解析函数视为真正意义上的单复变量函数，而非两个实变量的复函数 [13]。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">全纯函数</h5>
+                        <p>如果一个复函数在复平面上的一个开子集内的每一点都复可微，则称该函数在该开子集上是<strong>全纯的</strong>（Holomorphic Function）[1,
+                            11]。全纯函数有时也被称为正则函数或解析函数 [11]。</p>
+                        <p>在整个复平面上都全纯的函数称为<strong>整函数</strong>（Entire Function）[11]。</p>
+                        <p>全纯函数具有比实可微函数强得多的性质：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>无限可微性与泰勒级数展开</strong>：每个全纯函数在其定义域内的每一点都是无穷次可微的 [1, 11,
+                                13]。更进一步，它等于其自身的泰勒级数，且泰勒级数在其定义域内的每个开圆盘上收敛 [1, 11]。这一性质在实分析中通常不成立，是复分析的独特之处 [1, 8]。</li>
+                            <li><strong>线性性质与复合运算</strong>：由于复微分是线性的，并服从积、商和链式法则，因此全纯函数的和、积及复合函数都是全纯的，而两个全纯函数的商在所有分母非零的地方全纯
+                                [11]。</li>
+                            <li><strong>保角性（共形性）</strong>：在导数非零的点附近，全纯函数是保角（共形）的，这意味着它们保持了小图形的角度和形状，尽管尺寸可能会改变 [11,
+                                13]。这在流体力学和电磁学等领域有重要应用 [13]。</li>
+                        </ul>
+                        <p>全纯函数的这些性质，特别是其无限可微性和可展开为幂级数的特性，是柯西积分公式和留数定理等核心理论得以建立的基础。</p>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4 mt-8">III.
+                        复变函数核心定理及推导</h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>复变函数论的核心在于其强大的积分理论。柯西积分定理、柯西积分公式和留数定理是复分析中最基本且最具影响力的工具，它们不仅简化了复积分的计算，更揭示了全纯函数和亚纯函数的深刻性质。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">柯西积分定理</h4>
+                        <p>柯西积分定理（又称柯西-古萨定理）是复变函数路径积分的一个重要定理。它指出，如果一个函数在单连通区域内全纯，那么它沿着该区域内任何可求长闭合曲线的积分都为零 [9, 10, 16]。
+                        </p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">定理陈述与条件</h5>
+                        <p><strong>定理 (柯西积分定理)</strong>：<br>设 $D$ 是复平面 $\mathbb{C}$ 的一个单连通开子集。设 $f: D \to \mathbb{C}$
+                            是一个在 $D$ 上全纯的函数。设 $\gamma$ 是 $D$ 内的一条分段可求长的简单闭曲线（即连续而不自交并且能定义长度的闭合曲线），那么：</p>
+                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 0$ </div>
+                        <p>这里的“单连通”条件至关重要，它意味着区域 $D$ 没有“洞” [9, 10]。如果区域有“洞”，且闭曲线包围了奇点，那么积分通常不为零，例如函数 $1/z$
+                            沿单位圆的积分不为零，因为它在原点处有奇点 [9, 10]。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">严格证明</h5>
+                        <p>柯西积分定理的证明有多种方法，其中一种常见且直观的方法是利用格林公式，但这种方法通常需要假定函数 $f(z)$
+                            的偏导数是连续的。古萨（Goursat）后来证明了即使不假设偏导数连续，定理也成立，从而使得定理的适用范围更广。</p>
+                        <p class="font-semibold mt-2">1. 基于格林公式的证明（假设偏导数连续）：</p>
+                        <p>设 $f(z) = u(x, y) + iv(x, y)$，且 $dz = dx + i dy$。那么复积分可以写成：</p>
+                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = \oint_{\gamma} (u + iv)(dx + i
+                            dy) = \oint_{\gamma} (u dx - v dy) + i \oint_{\gamma} (v dx + u dy)$ </div>
+                        <p>假设 $u$ 和 $v$ 的偏导数连续，我们可以对每个实部和虚部应用格林公式。格林公式指出，对于一个在区域 $R$ 内具有连续偏导数的向量场 $(P, Q)$，沿着 $R$ 的边界
+                            $\gamma$ 的线积分等于区域 $R$ 上的面积分：</p>
+                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} (P dx + Q dy) = \iint_R \left(
+                            \frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y} \right) dx dy$ </div>
+                        <p>应用格林公式到实部积分：</p>
+                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} (u dx - v dy) = \iint_R \left(
+                            \frac{\partial (-v)}{\partial x} - \frac{\partial u}{\partial y} \right) dx dy = \iint_R
+                            \left( -\frac{\partial v}{\partial x} - \frac{\partial u}{\partial y} \right) dx dy$ </div>
+                        <p>应用格林公式到虚部积分：</p>
+                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} (v dx + u dy) = \iint_R \left(
+                            \frac{\partial u}{\partial x} - \frac{\partial v}{\partial y} \right) dx dy$ </div>
+                        <p>由于 $f(z)$ 在 $D$ 内全纯，其实部 $u$ 和虚部 $v$ 必须满足柯西-黎曼方程 [1, 13, 14]：</p>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial u}{\partial x} = \frac{\partial
+                            v}{\partial y}$ </div>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial u}{\partial y} = -\frac{\partial
+                            v}{\partial x}$ </div>
+                        <p>将柯西-黎曼方程代入上述面积分：</p>
+                        <div class="text-center my-4 text-xl"> $-\frac{\partial v}{\partial x} - \frac{\partial
+                            u}{\partial y} = -(-\frac{\partial u}{\partial y}) - \frac{\partial u}{\partial y} = 0$
+                        </div>
+                        <div class="text-center my-4 text-xl"> $\frac{\partial u}{\partial x} - \frac{\partial
+                            v}{\partial y} = \frac{\partial u}{\partial x} - \frac{\partial u}{\partial x} = 0$ </div>
+                        <p>因此，两个面积分都为零，从而 $\oint_{\gamma} f(z) dz = 0 + i \cdot 0 = 0$ [10, 17, 18]。</p>
+                        <p class="font-semibold mt-2">2. 古萨定理证明概述（不假设偏导数连续）：</p>
+                        <p>古萨（Édouard Goursat）在1900年证明了柯西积分定理，无需假设 $f'(z)$ 的连续性，只需 $f(z)$ 在区域内复可微即可 [10,
+                            19]。这一证明通常采用“嵌套三角形”或“嵌套矩形”的方法 [19]。</p>
+                        <p>证明的核心思想是：对于任意给定的 $\varepsilon >
+                            0$，可以将积分区域（例如一个三角形或矩形）不断细分，直到其中一个子区域上的函数行为足够“平坦”，使得在该子区域上的积分的绝对值可以被任意小地控制。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>细分过程</strong>：假设要证明 $f$ 在一个三角形 $T$ 上的积分为零。将 $T$ 分成四个全等的小三角形。那么 $T$
+                                上的积分等于这四个小三角形上积分之和。根据三角不等式，至少有一个小三角形 $T_1$ 上的积分的绝对值不小于 $T$
+                                上积分绝对值的四分之一。重复这个过程，得到一个嵌套的三角形序列 $T \supset T_1 \supset T_2 \supset \dots \supset T_n
+                                \supset \dots$。</li>
+                            <li><strong>极限点</strong>：根据嵌套区间定理的推广（或嵌套矩形/三角形引理），这个序列收敛到一个唯一的点 $z_0$，$z_0 \in
+                                \bigcap_{n=0}^{\infty} T_n$ [19]。</li>
+                            <li><strong>利用可微性</strong>：由于 $f$ 在 $z_0$ 处复可微，对于任意 $\varepsilon > 0$，存在一个 $\delta > 0$，使得当
+                                $|z - z_0| < \delta$ 时，$f(z)=f(z_0) + f'(z_0)(z - z_0) + \psi(z)(z - z_0)$，其中 $\psi(z)
+                                    \to 0$ 当 $z \to z_0$，且 $|\psi(z)| < \varepsilon$ [19]。</li>
+                            <li><strong>积分估计</strong>：对于足够大的 $n$，使得 $T_n$ 完全包含在 $|z - z_0| < \delta$ 的圆盘内。由于 $f(z_0)$ 和
+                                    $f'(z_0)(z - z_0)$ 都有原函数，它们在闭合路径 $T_n$ 上的积分为零。因此，$\oint_{T_n} f(z) dz=\oint_{T_n}
+                                    \psi(z)(z - z_0) dz$ [19]。</li>
+                            <li><strong>最终结论</strong>：利用积分的估计引理，可以证明 $\left| \oint_{T_n} f(z) dz \right|$ 趋于零，从而推导出
+                                $\oint_T f(z) dz = 0$ [19]。</li>
+                        </ul>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">推论与意义</h5>
+                        <p>柯西积分定理具有深远的推论和意义：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>路径无关性</strong>：在单连通区域内，全纯函数的路径积分只与积分的起点和终点有关，而与中间经历的路径无关 [9,
+                                10]。这与实微积分基本定理的结论类似。</li>
+                            <li><strong>基础性</strong>：柯西积分定理是复分析中许多其他重要定理（如柯西积分公式、留数定理）的基石 [13, 20,
+                                21]。它为后续的复积分计算方法奠定了理论基础。</li>
+                        </ul>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">柯西积分公式</h4>
+                        <p>柯西积分公式是复分析中最为重要的公式之一，它表明了全纯函数在闭合区域内部的值完全由其在区域边界上的值决定，并且给出了区域内每一点的任意阶导数的积分计算方式 [1, 22, 23]。
+                        </p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">公式陈述</h5>
+                        <p><strong>定理 (柯西积分公式)</strong>：<br>设 $U$ 是复平面 $\mathbb{C}$ 的一个开子集，设闭圆盘 $D = \{z : |z - a| \le
+                            r\}$ 完全包含在 $U$ 中。设 $f: U \to \mathbb{C}$ 是一个在 $U$ 上全纯的函数，且 $\gamma$ 是 $D$ 的边界圆周，逆时针方向。那么对于
+                            $D$ 内部的任意一点 $a$，有：</p>
+                        <div class="text-center my-4 text-xl"> $f(a) = \frac{1}{2\pi i} \oint_{\gamma} \frac{f(z)}{z-a}
+                            dz$ </div>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">严格证明</h5>
+                        <p>柯西积分公式的证明通常依赖于柯西积分定理。</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>构造辅助函数</strong>：考虑函数 $g(z) = \frac{f(z)}{z-a}$。函数 $g(z)$ 在 $z=a$ 处有一个奇点。</li>
+                            <li><strong>路径形变</strong>：由于 $g(z)$ 在区域 $D$ 内除了点 $a$ 之外都是全纯的，我们可以将沿 $\gamma$ 的积分路径形变为一个以 $a$
+                                为中心、半径为 $\varepsilon$ 的小圆周
+                                $\gamma_\varepsilon$，且方向相同。根据柯西积分定理的推广（对于带洞区域），$\oint_{\gamma} g(z) dz =
+                                \oint_{\gamma_\varepsilon} g(z) dz$ [20]。</li>
+                            <li><strong>计算小圆周上的积分</strong>：在小圆周 $\gamma_\varepsilon$ 上，我们可以将 $f(z)$ 写成 $f(z) = f(a) +
+                                (f(z) - f(a))$。因此：</li>
+                            <div class="text-center my-4 text-xl"> $\oint_{\gamma_\varepsilon} \frac{f(z)}{z-a} dz =
+                                \oint_{\gamma_\varepsilon} \frac{f(a)}{z-a} dz + \oint_{\gamma_\varepsilon} \frac{f(z) -
+                                f(a)}{z-a} dz$ </div>
+                            <ul class="list-disc list-inside space-y-2 ml-6">
+                                <li>第一个积分：令 $z - a = \varepsilon e^{i\phi}$，则 $dz = i\varepsilon e^{i\phi} d\phi$。</li>
+                                <div class="text-center my-4 text-xl"> $\oint_{\gamma_\varepsilon} \frac{f(a)}{z-a} dz =
+                                    f(a) \int_0^{2\pi} \frac{1}{\varepsilon e^{i\phi}} i\varepsilon e^{i\phi} d\phi =
+                                    f(a) \int_0^{2\pi} i d\phi = 2\pi i f(a)$ </div>
+                                <li>第二个积分：由于 $f(z)$ 在 $a$ 处连续，对于任意 $\delta > 0$，存在 $\varepsilon_0 > 0$，使得当 $|z-a| <
+                                        \varepsilon_0$ 时，$|f(z) - f(a)| < \delta$。因此，当 $\varepsilon < \varepsilon_0$
+                                        时：</li>
+                                        <div class="text-center my-4 text-xl"> $\left| \oint_{\gamma_\varepsilon}
+                                            \frac{f(z) - f(a)}{z-a} dz \right| \le \max_{|z-a|=\varepsilon} \left|
+                                            \frac{f(z) - f(a)}{z-a} \right| \cdot \text{Length}(\gamma_\varepsilon) \le
+                                            \frac{\delta}{\varepsilon} \cdot 2\pi\varepsilon = 2\pi\delta$ </div>
+                                        <p>由于 $\delta$ 可以任意小，这个积分的极限为零 [20]。</p>
+                            </ul>
+                            <li><strong>结论</strong>：将上述结果合并，得到 $2\pi i f(a) + 0 = \oint_{\gamma} \frac{f(z)}{z-a} dz$，从而
+                                $f(a) = \frac{1}{2\pi i} \oint_{\gamma} \frac{f(z)}{z-a} dz$。</li>
+                        </ol>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">高阶导数公式及其归纳推导</h5>
+                        <p>柯西积分公式最令人惊叹的推论之一是，全纯函数在其定义域内是无限次可微的，并且其各阶导数也有积分公式 [1, 11, 13, 20]。这在实分析中是普遍不成立的性质。</p>
+                        <p><strong>定理 (柯西高阶导数公式)</strong>：<br>设 $f(z)$ 和 $\gamma$ 满足柯西积分公式的相同条件，那么对于 $D$ 内部的任意一点 $a$，
+                            $f(z)$ 在 $a$ 处的 $n$ 阶导数为：</p>
+                        <div class="text-center my-4 text-xl"> $f^{(n)}(a) = \frac{n!}{2\pi i} \oint_{\gamma}
+                            \frac{f(z)}{(z-a)^{n+1}} dz$, 其中 $n = 0, 1, 2, \dots$ </div>
+                        <p>当 $n=0$ 时，此公式即为柯西积分公式本身。</p>
+                        <p class="font-semibold mt-2">归纳推导概述：</p>
+                        <p>这个公式可以通过对 $n$ 进行数学归纳法来严格证明 [26, 27, 28]。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>基底情况 ($n=0$)</strong>：已由柯西积分公式证明。</li>
+                            <li><strong>归纳假设</strong>：假设公式对某个非负整数 $n$ 成立。</li>
+                            <li><strong>归纳步骤</strong>：我们需要证明公式对 $n+1$ 也成立。这通常通过对柯西高阶导数公式进行微分（即对 $a$
+                                求导）来实现，并需要证明在积分号下求导是允许的 [26, 27, 29]。</li>
+                            <p>考虑 $f^{(n)}(a)$ 的定义：</p>
+                            <div class="text-center my-4 text-xl"> $f^{(n+1)}(a) = \lim_{\Delta a \to 0} \frac{f^{(n)}(a
+                                + \Delta a) - f^{(n)}(a)}{\Delta a}$ </div>
+                            <p>代入归纳假设的积分形式：</p>
+                            <div class="bg-stone-50 p-4 rounded-md my-2">
+                                <pre
+                                    class="text-sm overflow-x-auto">$f^{(n+1)}(a) = \lim_{\Delta a \to 0} \frac{1}{\Delta a} \left( \frac{n!}{2\pi i} \oint_{\gamma} \frac{f(z)}{(z-(a+\Delta a))^{n+1}} dz - \frac{n!}{2\pi i} \oint_{\gamma} \frac{f(z)}{(z-a)^{n+1}} dz \right)$</pre>
+                                <pre
+                                    class="text-sm overflow-x-auto">$= \frac{n!}{2\pi i} \lim_{\Delta a \to 0} \oint_{\gamma} f(z) \frac{(z-a)^{n+1} - (z-a-\Delta a)^{n+1}}{\Delta a (z-a-\Delta a)^{n+1} (z-a)^{n+1}} dz$</pre>
+                            </div>
+                            <p>在积分号下进行极限运算（这需要严格的证明，通常涉及积分的估计引理或一致收敛性），被积函数中的差商项会趋向于 $\frac{d}{da} \left(
+                                \frac{1}{(z-a)^{n+1}} \right) = \frac{(n+1)}{(z-a)^{n+2}}$：</p>
+                            <div class="bg-stone-50 p-4 rounded-md my-2">
+                                <pre
+                                    class="text-sm overflow-x-auto">$f^{(n+1)}(a) = \frac{n!}{2\pi i} \oint_{\gamma} f(z) \frac{(n+1)}{(z-a)^{n+2}} dz = \frac{(n+1)!}{2\pi i} \oint_{\gamma} \frac{f(z)}{(z-a)^{n+2}} dz$</pre>
+                            </div>
+                            <p>这正是对 $n+1$ 成立的公式。</p>
+                        </ul>
+                        <p>柯西高阶导数公式的深远意义在于，它证明了全纯函数不仅是无限次可微的，而且它们都是<strong>解析函数</strong>，即可以在其定义域内的每个点展开为收敛的幂级数 [1, 11,
+                            13, 20]。这一特性是实函数所不具备的，它使得复分析中的函数具有极强的“刚性”——局部性质决定了全局性质。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">洛朗级数展开与奇点分类</h4>
+                        <p>泰勒级数只能用于函数全纯的区域。然而，在复变函数中，我们经常需要研究函数在奇点附近的行为。<strong>洛朗级数</strong>（Laurent
+                            Series）是泰勒级数的推广，它允许包含负幂项，因此可以用于表示函数在含有孤立奇点的环形区域内的行为 [1, 30, 31]。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">洛朗级数定义与收敛域</h5>
+                        <p>一个函数 $f(z)$ 在以 $z_0$ 为中心的环形区域 $R_1 < |z - z_0| < R_2$ 内的洛朗级数展开式为：</p>
+                                <div class="text-center my-4 text-xl"> $f(z) = \sum_{n=-\infty}^{\infty} a_n (z -
+                                    z_0)^n$ </div>
+                                <p>其中系数 $a_n$ 由以下积分给出：</p>
+                                <div class="text-center my-4 text-xl"> $a_n = \frac{1}{2\pi i} \oint_C
+                                    \frac{f(\zeta)}{(\zeta - z_0)^{n+1}} d\zeta$ </div>
+                                <p>这里的 $C$ 是环形区域内任意一条围绕 $z_0$ 的简单闭合曲线 [30, 31]。</p>
+                                <p>洛朗级数的核心优势在于它能够围绕函数的奇点进行展开，从而揭示函数在奇点附近的精细结构 [31]。如果洛朗级数中没有负幂项（即 $a_n = 0$ 对所有 $n <
+                                        0$），则洛朗级数退化为泰勒级数，表明函数在该环形区域内是全纯的 [30]。</p>
+                                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">奇点分类</h5>
+                                        <p>通过洛朗级数展开，可以对复变函数的孤立奇点进行精确分类 [1, 30]：</p>
+                                        <ol class="list-decimal list-inside space-y-2">
+                                            <li><strong>可去奇点 (Removable Singularities)</strong>：<br>如果函数 $f(z)$ 在孤立奇点
+                                                $z_0$ 附近的洛朗级数展开中，不包含任何负幂项（即 $a_n = 0$ 对所有 $n < 0$），则 $z_0$ 称为可去奇点 [1,
+                                                    30]。在这种情况下，可以通过重新定义或补充 $f(z_0)$ 的值，使得函数在 $z_0$ 处变为全纯的 [1, 30]。<br>
+                                                    例如，函数 $f(z) = \frac{\sin z}{z}$ 在 $z=0$ 处有一个可去奇点。其泰勒展开式为
+                                                    $\frac{1}{z} \left( z - \frac{z^3}{3!} + \dots \right) = 1 -
+                                                    \frac{z^2}{3!} + \dots$，不含负幂项。</li>
+                                            <li><strong>极点 (Poles)</strong>：<br>如果函数 $f(z)$ 在孤立奇点 $z_0$
+                                                附近的洛朗级数展开中，负幂项的数量是有限的，且最低的负幂项是 $(z - z_0)^{-m}$（即 $a_{-m} \neq 0$ 但对所有
+                                                $n < -m$ 都有 $a_n=0$），则 $z_0$ 称为 $m$ 阶极点 [1,
+                                                    30]。一阶极点又称为简单极点。函数在极点处趋于无穷大，其行为类似于 $1/(z-a)^n$ 在 $z=a$ 处的奇点 [1]。<br>
+                                                    例如，函数 $f(z) = \frac{1}{(z-1)^2}$ 在 $z=1$ 处有一个二阶极点 [30]。</li>
+                                            <li><strong>本质奇点 (Essential Singularities)</strong>：<br>如果函数 $f(z)$ 在孤立奇点
+                                                $z_0$ 附近的洛朗级数展开中，负幂项的数量是无限的，则 $z_0$ 称为本质奇点 [1,
+                                                30]。函数在本质奇点附近表现出极其复杂的行为，例如根据皮卡定理，它在任意小的邻域内取遍除了可能两个值之外的所有复数值。<br>例如，函数
+                                                $f(z) = e^{1/z}$ 在 $z=0$ 处有一个本质奇点 [30]。</li>
+                                        </ol>
+                                        <p>洛朗级数和奇点分类是留数定理的基础，因为留数（即 $a_{-1}$ 系数）的计算直接依赖于洛朗级数展开 [30]。</p>
+                                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">留数定理</h4>
+                                        <p>留数定理是复分析中计算闭合曲线路径积分的强大工具，它是柯西积分定理和柯西积分公式的推广 [1, 32,
+                                            33]。它不仅用于计算复积分，也可用于计算许多难以用实分析方法求解的实积分 [34]。</p>
+                                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">定理陈述与留数定义</h5>
+                                        <p><strong>定理 (留数定理)</strong>：<br>假设 $U$ 是复平面上的一个单连通开子集，$a_1, \dots, a_n$ 是 $U$
+                                            中有限个孤立奇点。设 $f$ 是定义在 $U \setminus \{a_1, \dots, a_n\}$ 上的全纯函数。如果 $\gamma$
+                                            是一条把所有 $a_k$ 包围起来的可求长闭曲线，且不经过任何一个 $a_k$，那么：</p>
+                                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 2\pi i
+                                            \sum_{k=1}^{n} \operatorname{I}(\gamma, a_k) \operatorname{Res}(f, a_k)$
+                                        </div>
+                                        <p>其中 $\operatorname{I}(\gamma, a_k)$ 表示 $\gamma$ 关于点 $a_k$ 的卷绕数（winding
+                                            number）。如果 $\gamma$ 是若尔当曲线（简单闭曲线），且逆时针方向，则 $\operatorname{I}(\gamma, a_k) =
+                                            1$，此时公式简化为：</p>
+                                        <div class="text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 2\pi i
+                                            \sum_{k=1}^{n} \operatorname{Res}(f, a_k)$ </div>
+                                        <p><strong>留数 (Residue)</strong> 的定义：<br>函数 $f(z)$ 在孤立奇点 $z_0$ 处的留数
+                                            $\operatorname{Res}(f, z_0)$ 是其洛朗级数展开中 $(z - z_0)^{-1}$ 项的系数，即 $a_{-1}$ [30,
+                                            34, 35, 36]。</p>
+                                        <p><strong>留数的计算方法</strong>：</p>
+                                        <ul class="list-disc list-inside space-y-2">
+                                            <li><strong>简单极点</strong>：如果 $z_0$ 是 $f(z)$ 的简单极点，则 $\operatorname{Res}(f,
+                                                z_0) = \lim_{z \to z_0} (z - z_0) f(z)$ [34]。</li>
+                                            <li><strong>$m$ 阶极点</strong>：如果 $z_0$ 是 $f(z)$ 的 $m$ 阶极点，则
+                                                $\operatorname{Res}(f, z_0) = \frac{1}{(m-1)!} \lim_{z \to z_0}
+                                                \frac{d^{m-1}}{dz^{m-1}} [(z - z_0)^m f(z)]$ [34]。</li>
+                                            <li><strong>洛朗级数展开</strong>：对于高阶极点或本质奇点，直接展开洛朗级数并找到 $a_{-1}$ 系数通常更简单 [30,
+                                                34]。</li>
+                                        </ul>
+                                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">严格证明</h5>
+                                        <p>留数定理的证明基于柯西积分定理和洛朗级数展开。</p>
+                                        <ol class="list-decimal list-inside space-y-2">
+                                            <li><strong>构造辅助路径</strong>：对于每个孤立奇点 $a_k$，在 $\gamma$ 内部且不包含其他奇点的情况下，构造一个以
+                                                $a_k$ 为中心、足够小的逆时针圆周 $C_k$ [37, 38]。</li>
+                                            <li><strong>应用柯西积分定理的推广</strong>：通过在 $\gamma$ 和所有 $C_k$
+                                                之间引入“割线”，可以构造一个新的闭合围道 $\tilde{\gamma}$，使得 $\tilde{\gamma}$
+                                                所包围的区域内没有奇点。根据柯西积分定理，$\oint_{\tilde{\gamma}} f(z) dz = 0$ [37, 38]。</li>
+                                            <li><strong>路径分解</strong>：这个新的围道 $\tilde{\gamma}$ 可以分解为 $\gamma$ 和所有 $C_k$
+                                                的组合，且方向相反（因为 $C_k$ 是逆时针，而 $\tilde{\gamma}$ 内部的 $C_k$
+                                                边界是顺时针）。因此，$\oint_{\gamma} f(z) dz - \sum_{k=1}^{n} \oint_{C_k} f(z) dz
+                                                = 0$，即 $\oint_{\gamma} f(z) dz = \sum_{k=1}^{n} \oint_{C_k} f(z) dz$
+                                                [37, 38]。</li>
+                                            <li><strong>利用洛朗级数</strong>：对于每个小圆周 $C_k$，函数 $f(z)$ 可以用其在 $a_k$
+                                                处的洛朗级数展开。由于洛朗级数在 $C_k$ 上一致收敛，可以逐项积分 [36, 38]。</li>
+                                            <div class="text-center my-4 text-xl"> $\oint_{C_k} f(z) dz = \oint_{C_k}
+                                                \sum_{j=-\infty}^{\infty} a_j^{(k)} (z - a_k)^j dz =
+                                                \sum_{j=-\infty}^{\infty} a_j^{(k)} \oint_{C_k} (z - a_k)^j dz$ </div>
+                                            <p>根据柯西积分公式的推论，只有当 $j = -1$ 时，积分 $\oint_{C_k} (z - a_k)^j dz$ 不为零，其值为 $2\pi
+                                                i$ [36]。其他项的积分都为零。</p>
+                                            <p>因此，$\oint_{C_k} f(z) dz = a_{-1}^{(k)} \cdot 2\pi i = 2\pi i
+                                                \operatorname{Res}(f, a_k)$ [36, 37, 38]。</p>
+                                            <li><strong>最终结论</strong>：将此结果代回路径分解的等式，即得到留数定理：</li>
+                                            <div class="text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 2\pi i
+                                                \sum_{k=1}^{n} \operatorname{Res}(f, a_k)$ </div>
+                                        </ol>
+                                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">应用：计算实积分</h5>
+                                        <p>留数定理是计算许多实积分的强大工具，特别是那些用传统实分析方法难以求解的积分
+                                            [34]。其基本思想是将实积分转化为复平面上的围道积分，然后利用留数定理进行计算。</p>
+                                        <p>常见的应用类型包括：</p>
+                                        <ol class="list-decimal list-inside space-y-2">
+                                            <li><strong>形如 $\int_0^{2\pi} F(\cos\theta, \sin\theta) d\theta$
+                                                    的积分</strong>：<br>这类积分可以通过变量替换 $z = e^{i\theta}$ 转化为沿单位圆 $C$ 的复积分。此时
+                                                $d\theta = dz/(iz)$，$\cos\theta = (z+z^{-1})/2$，$\sin\theta =
+                                                (z-z^{-1})/(2i)$ [39]。积分转化为 $\oint_C G(z) dz$，然后计算 $G(z)$ 在单位圆内部的极点留数之和。
+                                            </li>
+                                            <li><strong>形如 $\int_{-\infty}^{\infty} f(x) dx$
+                                                    的积分（分母在实轴上无零点）</strong>：<br>将 $f(x)$ 推广到复函数 $f(z)$。选择一个由实轴上从 $-R$ 到
+                                                $R$ 的线段和上半平面（或下半平面）半径为 $R$ 的半圆弧 $C_R$ 组成的闭合围道 $C$。当 $R \to \infty$ 时，如果
+                                                $\lim_{R \to \infty} \oint_{C_R} f(z) dz = 0$（这通常由 $f(z)$ 的衰减性质保证，例如当 $z
+                                                f(z) \to 0$ 时），那么 $\int_{-\infty}^{\infty} f(x) dx = 2\pi i \sum
+                                                (\text{上半平面极点的留数})$ [39]。<br><strong>示例</strong>：计算
+                                                $\int_{-\infty}^{\infty} \frac{e^{itx}}{x^2+1} dx$ [34]。
+                                                <ul class="list-disc list-inside space-y-1 ml-6">
+                                                    <li>令 $f(z) = \frac{e^{itz}}{z^2+1}$。当 $t > 0$ 时，选择上半平面的半圆围道。</li>
+                                                    <li>奇点为 $z = \pm i$。上半平面内的奇点为 $z=i$。</li>
+                                                    <li>在 $z=i$ 处的留数为 $\operatorname{Res}_{z=i} f(z) = \lim_{z \to i}
+                                                        (z-i) \frac{e^{itz}}{(z-i)(z+i)} = \frac{e^{it(i)}}{i+i} =
+                                                        \frac{e^{-t}}{2i}$ [34]。</li>
+                                                    <li>根据留数定理，$\oint_C f(z) dz = 2\pi i \cdot \frac{e^{-t}}{2i} = \pi
+                                                        e^{-t}$ [34]。</li>
+                                                    <li>当 $R \to \infty$ 时，沿半圆弧的积分趋于零（由 Jordan 引理或直接估计）[33, 34]。</li>
+                                                    <li>因此，$\int_{-\infty}^{\infty} \frac{e^{itx}}{x^2+1} dx = \pi
+                                                        e^{-t}$。</li>
+                                                    <li>当 $t < 0$ 时，选择下半平面的半圆围道，得到 $\pi e^{t}$。</li>
+                                                    <li>综合起来，$\int_{-\infty}^{\infty} \frac{e^{itx}}{x^2+1} dx = \pi
+                                                        e^{-|t|}$ [34]。</li>
+                                                </ul>
+                                            </li>
+                                            <li><strong>形如 $\int_{-\infty}^{\infty} f(x) dx$
+                                                    的积分（分母在实轴上有零点）</strong>：<br>这类积分需要使用“避开”实轴上零点的围道，例如通过在零点附近构建小的半圆弧，并利用主值积分的概念
+                                                [39]。<br><strong>示例</strong>：计算 $\int_0^{\infty} \frac{\sin x}{x} dx$
+                                                [39]。
+                                                <ul class="list-disc list-inside space-y-1 ml-6">
+                                                    <li>这通常通过计算 $\oint_C \frac{e^{iz}}{z} dz$ 的主值积分来实现。围道 $C$ 由实轴上从 $r$
+                                                        到 $R$ 的线段、大半圆 $C_R$、实轴上从 $-R$ 到 $-r$ 的线段以及小半圆 $C_r$ 组成，小半圆绕过原点。
+                                                    </li>
+                                                    <li>由于围道内没有奇点，根据柯西积分定理，$\oint_C \frac{e^{iz}}{z} dz = 0$ [39]。</li>
+                                                    <li>当 $R \to \infty$ 时，$\oint_{C_R} \frac{e^{iz}}{z} dz \to 0$
+                                                        (Jordan 引理)。</li>
+                                                    <li>当 $r \to 0$ 时，$\oint_{C_r} \frac{e^{iz}}{z} dz \to \pi
+                                                        i$（注意方向和留数）。</li>
+                                                    <li>因此，$\int_{-\infty}^{\infty} \frac{e^{ix}}{x} dx - \pi i = 0$，即
+                                                        $\int_{-\infty}^{\infty} \frac{\cos x + i \sin x}{x} dx = \pi
+                                                        i$。</li>
+                                                    <li>比较虚部，得到 $\int_{-\infty}^{\infty} \frac{\sin x}{x} dx = \pi$。由于
+                                                        $\frac{\sin x}{x}$ 是偶函数，所以 $\int_0^{\infty} \frac{\sin x}{x} dx
+                                                        = \frac{\pi}{2}$ [39]。</li>
+                                                </ul>
+                                            </li>
+                                        </ol>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4 mt-8">IV. 鞍点法
+                    </h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>鞍点法（Saddle Point Method），又称最速下降法（Method of Steepest
+                            Descent），是拉普拉斯方法在复平面上的推广，主要用于近似估计包含大参数的复积分 [21, 40, 41, 42,
+                            43]。这种方法在理论物理、统计力学、量子力学以及渐近分析等领域具有广泛应用。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">原理与推导</h4>
+                        <p>鞍点法的核心思想是，对于形如 $I(\lambda) = \int_C f(z)e^{\lambda g(z)} dz$ 的积分，当大参数 $\lambda \to \infty$
+                            时，被积函数 $e^{\lambda g(z)}$ 的值在复平面上会急剧变化，其主要贡献来自 $g(z)$
+                            实部取最大值（或最小值，取决于积分路径）的区域。在复平面上，这些“贡献点”通常是 $g'(z)=0$ 的驻点，即鞍点 [21, 43]。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">鞍点定义与性质</h5>
+                        <p>一个全纯函数 $g(z)$ 的<strong>鞍点</strong> $z_0$ 是其导数 $g'(z_0)=0$ 的点 [21, 43]。对于非退化鞍点（即 $g''(z_0)
+                            \neq 0$），在鞍点附近，函数 $g(z)$ 的实部 $\operatorname{Re}(g(z))$
+                            形成一个鞍形曲面，其中一个方向是下降最快的方向（最速下降路径），另一个方向是上升最快的方向。</p>
+                        <p>鞍点法之所以被称为最速下降法，是因为对于解析函数 $g(z)$，其常相位线（$\operatorname{Im}(g(z))$
+                            为常数）与最速下降线（$\operatorname{Re}(g(z))$ 下降最快的方向）是正交的。这直接来源于柯西-黎曼方程，它表明
+                            $\operatorname{Re}(g(z))$ 的梯度与 $\operatorname{Im}(g(z))$ 的梯度是正交的
+                            [21]。因此，沿着常相位线移动，$\operatorname{Re}(g(z))$ 会以最快的速度变化，从而使得被积函数 $e^{\lambda g(z)}$
+                            在远离鞍点的区域迅速衰减。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">推导步骤</h5>
+                        <p>鞍点法的推导涉及以下关键步骤：</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>路径形变</strong>：由于被积函数 $f(z)e^{\lambda g(z)}$ 是全纯的，根据柯西积分定理，可以将原始积分路径 $C$
+                                形变为一条通过鞍点 $z_0$ 的新路径 $C'$，且沿 $C'$ 路径上的 $\operatorname{Im}(g(z))$ 保持常数（即最速下降路径），同时确保积分值不变
+                                [21, 43]。这条路径的选择使得被积函数在鞍点附近贡献最大，而在远离鞍点处迅速衰减。</li>
+                            <li><strong>复莫尔斯引理</strong>：在非退化鞍点 $z_0$ 附近，全纯函数 $g(z)$ 可以通过变量变换，使其局部行为近似为二次形式。具体而言，存在局部坐标变换
+                                $w = \phi(z)$，使得 $g(z) - g(z_0) \approx \frac{1}{2} g''(z_0) (z - z_0)^2$。更一般地，对于 $\mu$
+                                阶鞍点（即 $g'(z_0) = \dots = g^{(\mu-1)}(z_0) = 0$ 且 $g^{(\mu)}(z_0) \neq 0$），可以局部展开为 $g(z)
+                                = g(z_0) - p_0(z - z_0)^\mu (1 - \phi(z))$，其中 $\phi(z_0)=0$ 且 $\phi(z)$ 全纯 [21, 43]。
+                            </li>
+                            <li><strong>积分近似</strong>：将积分路径限制在鞍点 $z_0$ 的一个足够小的邻域内，因为该邻域外的贡献是指数级衰减的，可以忽略不计 [21,
+                                43]。在鞍点附近，将 $f(z)$ 和 $g(z)$ 展开为泰勒级数。对于最简单的非退化鞍点情况（$\mu=2$），取 $f(z)$ 的零阶近似 $f(z_0)$，并利用
+                                $g(z) - g(z_0) \approx \frac{1}{2} g''(z_0) (z - z_0)^2$，积分近似为高斯积分的形式 [21, 43]。</li>
+                            <li><strong>渐近展开式</strong>：通过精确的变量变换和对伽马函数积分的利用，可以得到积分的完整渐近展开式。对于形如 $\int_C e^{N \cdot p(z)}
+                                q(z) dz$ 的积分，当 $N \to \infty$ 时，其渐近展开为：</li>
+                            <div class="text-center my-4 text-xl"> $\int_C e^{N \cdot p(z)} q(z) dz = e^{N \cdot p(z_0)}
+                                \sum_{s=0}^{S-1} \Gamma\left(\frac{s+1}{\mu}\right) \alpha_s \cdot \frac{e^{2\pi i
+                                k(s+1)/\mu}}{N^{(s+1)/\mu}} + O\left(\frac{K_q}{N^{(S+1)/\mu}}\right)$ </div>
+                            <p>其中 $\alpha_s$ 是与 $p(z)$ 和 $q(z)$ 在鞍点 $z_0$ 处的导数相关的系数 [43]。</p>
+                        </ol>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">多鞍点情况</h5>
+                        <p>如果函数 $g(z)$ 存在多个孤立的非退化鞍点，那么积分的渐近行为是所有鞍点贡献的总和。这通常通过单位分解（partition of
+                            unity）将积分分解为每个鞍点邻域上的积分，然后分别计算每个鞍点的贡献并求和 [21, 44]。更复杂的情况是“合并鞍点”（coalescing saddle
+                            points），即两个或多个鞍点在参数变化时趋于重合，此时需要更高级的均匀渐近方法来处理 [44]。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">应用与局限</h4>
+                        <p>鞍点法在许多科学和工程领域都有重要的应用，尤其是在需要计算大参数极限下积分的渐近行为时。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">典型应用</h5>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Gamma 函数的渐近展开（斯特林公式）</strong>：伽马函数 $\Gamma(N+1) = \int_0^\infty e^{-t}t^N dt$
+                                的积分表示可以通过变量替换 $t=Nz$ 转化为鞍点法适用的形式，从而推导出著名的斯特林近似及其高阶修正项 [43]。</li>
+                            <li><strong>概率论与统计力学</strong>：在概率论中，鞍点法用于分析随机过程的渐近行为，例如随机游走和分支过程。在统计力学中，它常用于研究相变临界行为，如伊辛模型和渗流模型
+                                [44]。</li>
+                            <li><strong>量子力学与场论</strong>：鞍点法在量子力学中用于 WKB 近似和路径积分的渐近计算 [21]。</li>
+                            <li><strong>数论</strong>：鞍点法也应用于数论，例如分析整数分拆函数（partitions）的渐近行为，如西尔维斯特波（Sylvester waves）的渐近展开
+                                [43]。</li>
+                            <li><strong>Kepler 行星运动理论</strong>：在 Kepler 行星运动理论中，鞍点法用于推导中心方程的傅里叶展开项，这涉及到复杂积分的精确渐近分析 [43]。
+                            </li>
+                        </ul>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">局限性</h5>
+                        <p>尽管鞍点法功能强大，但它也存在一些局限性：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>鞍点存在与性质</strong>：该方法要求被积函数具有鞍点，并且能够将积分路径形变为通过鞍点的最速下降路径。在某些情况下，鞍点可能不存在，或路径形变非常复杂。
+                            </li>
+                            <li><strong>退化鞍点</strong>：对于退化鞍点（即 $g''(z_0) =
+                                0$），标准的鞍点法公式不再适用，需要借助更高级的数学工具，如突变理论（catastrophe theory）来处理 [21]。</li>
+                            <li><strong>计算复杂性</strong>：虽然原理简洁，但计算高阶渐近项或处理多个/合并鞍点时，计算过程可能变得非常复杂且耗时 [44]。</li>
+                            <li><strong>严格性挑战</strong>：鞍点法提供的是渐近近似，而非精确值。在某些情况下，对近似误差的严格控制和证明可能具有挑战性 [44]。</li>
+                        </ul>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4 mt-8">V.
+                        其他常用计算方法</h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>除了上述核心定理和鞍点法之外，复变函数论还提供了多种其他强大的计算方法，它们在理论分析和实际应用中都扮演着重要角色。</p>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">幅角原理与鲁歇定理</h4>
+                        <p>幅角原理和鲁歇定理是复分析中用于计数亚纯函数零点和极点的有力工具，它们在方程求根、控制理论等领域有重要应用。</p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">幅角原理</h5>
+                        <p><strong>原理陈述</strong>：<br>设 $f(z)$ 是一个在闭合围道 $C$ 内部及边界上亚纯的函数，且在 $C$ 上没有零点或极点。那么以下关系成立：</p>
+                        <div class="text-center my-4 text-xl"> $\frac{1}{2\pi i} \oint_C \frac{f'(z)}{f(z)} dz = N - P =
+                            \frac{1}{2\pi} \Delta_C \arg f(z)$ </div>
+                        <p>其中 $N$ 是 $f(z)$ 在 $C$ 内部的零点个数（按重数计算），$P$ 是 $f(z)$ 在 $C$ 内部的极点个数（按阶数计算），$\Delta_C \arg f(z)$
+                            是当 $z$ 沿 $C$ 逆时针方向绕行一周时，$f(z)$ 的辐角变化量 [45, 46]。</p>
+                        <p>$\frac{1}{2\pi} \Delta_C \arg f(z)$ 也被称为 $f(z)$ 映射 $C$ 的图像曲线绕原点的卷绕数。</p>
+                        <p class="font-semibold mt-2">证明概述：</p>
+                        <p>幅角原理的证明基于留数定理。函数 $\frac{f'(z)}{f(z)}$ 称为 $f(z)$ 的对数导数。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>如果 $z_k$ 是 $f(z)$ 的一个 $n_k$ 阶零点，那么 $\frac{f'(z)}{f(z)}$ 在 $z_k$ 处有一个简单极点，其留数为 $n_k$ [45,
+                                46]。</li>
+                            <li>如果 $z_k$ 是 $f(z)$ 的一个 $m_k$ 阶极点，那么 $\frac{f'(z)}{f(z)}$ 在 $z_k$ 处有一个简单极点，其留数为 $-m_k$
+                                [45, 46]。</li>
+                        </ul>
+                        <p>根据留数定理，积分 $\frac{1}{2\pi i} \oint_C \frac{f'(z)}{f(z)} dz$ 等于所有零点留数之和减去所有极点留数之和，即 $N - P$
+                            [45, 46]。</p>
+                        <p class="font-semibold mt-2">应用：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>零点和极点计数</strong>：幅角原理提供了一种计算给定区域内函数零点和极点数量的方法，这在数值分析中非常有用 [46]。</li>
+                            <li><strong>黎曼假设的数值检验</strong>：它被用于对黎曼假设进行数值检验，以确定黎曼 $\xi$ 函数在临界线附近矩形区域内的零点数量 [46]。</li>
+                            <li><strong>控制理论</strong>：幅角原理是奈奎斯特稳定性判据（Nyquist stability criterion）的理论基础，在反馈控制系统分析中至关重要
+                                [46]。</li>
+                        </ul>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">鲁歇定理</h5>
+                        <p><strong>定理陈述</strong>：<br>设 $F(z)$ 和 $G(z)$ 是在闭合围道 $C$ 内部及边界上全纯的函数。如果对于 $C$ 上的所有 $z$，满足
+                            $|F(z)| > |G(z) - F(z)|$，那么 $F(z)$ 和 $G(z)$ 在 $C$ 内部具有相同数量的零点（按重数计算）[45]。</p>
+                        <p class="font-semibold mt-2">证明概述：</p>
+                        <p>鲁歇定理是幅角原理的直接推论。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>构造函数 $w(z) = G(z)/F(z)$。条件 $|F(z)| > |G(z) - F(z)|$ 意味着 $|G(z)/F(z) - 1| < 1$，即 $|w(z) -
+                                    1| < 1$。</li>
+                            <li>这意味着当 $z$ 沿 $C$ 运动时，$w(z)$ 的图像位于以 $1$ 为中心、半径为 $1$ 的圆盘内。因此，这个图像不会包围原点，所以 $w(z)$ 的辐角变化量
+                                $\Delta_C \arg w(z) = 0$ [45]。</li>
+                            <li>根据幅角原理，应用于 $w(z)$，我们有 $N_w - P_w = 0$，即 $w(z)$ 的零点数量等于其极点数量。</li>
+                            <li>由于 $w(z) = G(z)/F(z)$ 的零点是 $G(z)$ 的零点，而 $w(z)$ 的极点是 $F(z)$ 的零点，因此 $G(z)$ 和 $F(z)$ 在 $C$
+                                内部的零点数量相同 [45]。</li>
+                        </ul>
+                        <p class="font-semibold mt-2">应用：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>多项式求根</strong>：鲁歇定理常用于确定多项式在复平面特定区域内的根的数量，从而帮助定位根 [45]。</li>
+                            <li><strong>代数基本定理的证明</strong>：它提供了一种证明代数基本定理（任何非零常数多项式在复数域内至少有一个根）的替代方法 [45]。</li>
+                        </ul>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">共形映射</h4>
+                        <p>共形映射（Conformal Mapping）是复分析中的一种特殊变换，它在变换过程中保持了角度的大小和方向。这种性质使得共形映射在解决各种物理和工程领域的边界值问题中发挥着关键作用。
+                        </p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">定义与性质</h5>
+                        <p>一个复函数 $f(z)$ 如果在其定义域内是全纯的且导数不为零，那么它就是共形映射 [47]。共形映射的核心性质包括：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>保角性</strong>：在导数非零的点处，共形映射保持了曲线之间夹角的大小和方向 [47]。</li>
+                            <li><strong>局部各向同性缩放</strong>：共形映射在局部具有相同的放大因子，这意味着它在所有方向上的放大率是相同的 [47]。</li>
+                            <li><strong>调和函数保持性</strong>：共形映射能够保持调和函数（拉普拉斯方程的解）。如果 $U(\xi, \eta)$ 是一个调和函数，并且 $\zeta =
+                                g(z)$ 是一个共形映射，那么复合函数 $u(x, y) = U(\xi(x, y), \eta(x, y))$ 也是一个调和函数 [47,
+                                48]。这一性质是共形映射在边界值问题中应用的基础。</li>
+                        </ul>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">莫比乌斯变换</h5>
+                        <p><strong>莫比乌斯变换</strong>（Möbius Transformation），也称为分式线性变换或双线性变换，是共形映射的一个重要子类。其一般形式为 $f(z) =
+                            \frac{az+b}{cz+d}$，其中 $a, b, c, d$ 是复数且 $ad - bc \neq 0$ [49]。</p>
+                        <p>莫比乌斯变换是黎曼球面到自身的双射共形映射，它具有以下显著特性：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>映射圆和直线到圆和直线</strong>：莫比乌斯变换将复平面上的所有圆和直线映射到新的圆或直线 [49]。</li>
+                            <li><strong>群结构</strong>：所有莫比乌斯变换在复合运算下形成一个群，称为莫比乌斯群 [49]。</li>
+                        </ul>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">边界值问题中的应用</h5>
+                        <p>共形映射在解决涉及拉普拉斯方程（如静电势、稳态温度、无旋无压流体）的边界值问题时表现出巨大的优势 [47,
+                            48]。其基本策略是将具有复杂边界形状的原始区域通过共形映射变换到一个更简单的区域（如单位圆盘或上半平面），在简单区域上求解问题，然后通过逆映射将解变换回原始区域 [47, 48]。
+                        </p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>静电学</strong>：在静电学中，电势满足拉普拉斯方程。共形映射可以将复杂形状的导体边界映射为简单的形状，从而简化电势的计算 [2, 3, 4, 47,
+                                48, 50, 51]。例如，计算非同轴电缆的电容或电场分布 [48, 50]。</li>
+                            <li><strong>流体力学与空气动力学</strong>：共形映射有助于分析流体围绕复杂几何形状（如翼型、障碍物）的流动模式 [2, 3, 4, 47,
+                                48]。通过将复杂翼型映射到单位圆，可以利用复势函数来研究流速势和流函数，从而优化机翼设计和预测升力、阻力 [2]。</li>
+                            <li><strong>热传导</strong>：在热传导问题中，共形映射可以简化不规则区域内热传导的分析 [47, 52]。</li>
+                            <li><strong>弹性理论</strong>：共形映射也用于研究复杂形状材料中的应力与应变分布 [47, 48]。</li>
+                        </ul>
+                        <h4 class="text-xl font-semibold text-yellow-900 mb-2 mt-6">傅里叶变换与拉普拉斯变换</h4>
+                        <p>傅里叶变换和拉普拉斯变换是信号处理、控制系统、物理学和工程学中不可或缺的数学工具。它们将函数从一个域（通常是时域）转换到另一个域（频域或复频域），从而简化了微分方程的求解和系统分析。
+                        </p>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">复平面上的定义与性质</h5>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>傅里叶变换 (Fourier
+                                    Transform)</strong>：<br>傅里叶变换将一个函数分解为不同频率的正弦和余弦（或复指数）分量的叠加。对于实变量函数 $f(x)$，其傅里叶变换
+                                $F(k)$ 通常定义为积分：</li>
+                            <div class="text-center my-4 text-xl"> $F(k) = \int_{-\infty}^{\infty} f(x)e^{-ikx} dx$
+                            </div>
+                            <p>其中 $k$ 是实频率变量 [53, 54]。</p>
+                            <p>傅里叶变换也可以扩展到复平面上的复变量 $\xi = \sigma + i\tau$。在这种情况下，积分的收敛性取决于函数 $f$ 的性质。例如，Paley-Wiener
+                                定理指出，一个函数是紧支集的无限可微函数，当且仅当其傅里叶变换是一个具有特定增长条件的整函数 [54, 55, 56]。</p>
+                            <p>傅里叶变换具有线性性、时移、频移、尺度变换、微分和卷积等重要性质 [13, 53, 54, 57]。</p>
+                            <li><strong>拉普拉斯变换 (Laplace Transform)</strong>：<br>拉普拉斯变换将实变量函数（通常是时间 $t$）转换为复变量
+                                $s$（在复频域，也称 $s$-平面）的函数 [58, 59, 60, 61]。单边拉普拉斯变换定义为：</li>
+                            <div class="text-center my-4 text-xl"> $F(s) = \int_0^{\infty} f(t)e^{-st} dt$ </div>
+                            <p>其中 $s = \sigma + i\omega$ 是一个复数 [58, 59, 61]。</p>
+                            <p>拉普拉斯变换的<strong>收敛域</strong>（Region of Convergence, ROC）通常是复平面上的一个右半平面，即
+                                $\operatorname{Re}(s) > \alpha$，其中 $\alpha$ 是函数的指数类型 [58, 60, 61, 62]。在收敛域内，拉普拉斯变换是解析函数
+                                [58]。</p>
+                            <p>拉普拉斯变换将时域中的微分和积分运算转化为 $s$ 域中的乘法和除法，从而极大地简化了线性常微分方程的求解 [58, 59, 61]。它也具有线性性、时移、频移、卷积等性质
+                                [57, 58, 59, 61]。</p>
+                        </ol>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">逆变换与留数定理的应用</h5>
+                        <p>傅里叶变换和拉普拉斯变换都是可逆的，它们的逆变换公式通常涉及复积分，而留数定理在计算这些逆变换时发挥着关键作用。</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li><strong>傅里叶逆变换</strong>：<br>傅里叶逆变换将频域函数 $F(k)$ 转换回时域函数 $f(x)$：</li>
+                            <div class="text-center my-4 text-xl"> $f(x) = \frac{1}{2\pi} \int_{-\infty}^{\infty}
+                                F(k)e^{ikx} dk$ </div>
+                            <p>当 $F(k)$ 是一个有理函数且在实轴上没有极点时，傅里叶逆变换可以通过构建闭合围道（例如上半平面或下半平面的半圆）并应用留数定理来计算 [54, 63,
+                                64]。选择上半平面或下半平面取决于 $e^{ikx}$ 中 $x$ 的符号和 $k$ 的虚部，以确保弧上积分趋于零。</p>
+                            <li><strong>拉普拉斯逆变换</strong>：<br>拉普拉斯逆变换通常通过 Bromwich 积分（或 Mellin 逆公式）给出：</li>
+                            <div class="text-center my-4 text-xl"> $f(t) = \frac{1}{2\pi i} \int_{\gamma -
+                                i\infty}^{\gamma + i\infty} F(s)e^{st} ds$ </div>
+                            <p>其中 $\gamma$ 是一个实数，使得积分路径位于 $F(s)$ 的收敛域内 [58, 59, 65, 66]。</p>
+                            <p>在大多数应用中，特别是当 $F(s)$ 是有理函数时，积分路径可以闭合，从而允许使用留数定理来计算逆变换 [58, 59, 65, 66]。</p>
+                            <p class="font-semibold mt-2">计算步骤：</p>
+                            <p>找到 $F(s)e^{st}$ 的所有极点 $s_k$，然后计算每个极点处的留数，将所有留数求和即可得到 $f(t)$ [58, 59, 65, 66, 67]。</p>
+                            <p>例如，对于 $F(s) = \frac{1}{s-a}$，其逆变换为 $e^{at}$。通过留数定理，在 $s=a$ 处的留数为 $\lim_{s \to a}
+                                (s-a)\frac{e^{st}}{s-a} = e^{at}$ [59]。</p>
+                        </ol>
+                        <h5 class="text-lg font-semibold text-yellow-900 mb-2 mt-4">交叉应用与工程物理领域</h5>
+                        <p>傅里叶变换和拉普拉斯变换在工程和物理学中具有广泛的交叉应用，它们通过将问题从时域转换到复频域，从而简化了分析和求解。</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><strong>信号处理</strong>：傅里叶变换用于分析信号的频率成分（频谱分析），在音频处理、图像压缩和通信系统中至关重要。拉普拉斯变换则用于分析线性时不变系统（LTI
+                                系统）的稳定性、瞬态响应和频率响应 [2, 3, 4, 13, 47, 57, 68]。</li>
+                            <li><strong>控制系统</strong>：拉普拉斯变换是控制理论中的基本工具，用于分析系统稳定性（如根轨迹法、奈奎斯特稳定性判据）和设计控制器 [2, 3, 4, 47,
+                                57]。</li>
+                            <li><strong>偏微分方程求解</strong>：傅里叶变换和拉普拉斯变换可以将某些偏微分方程（如热方程、波动方程）转化为常微分方程，从而简化求解过程 [57]。</li>
+                            <li><strong>量子力学</strong>：复数和复分析是量子力学的基本组成部分。波函数是复值函数，薛定谔方程涉及复数及其解。傅里叶变换在量子力学中用于在位置空间和动量空间之间转换波函数
+                                [2, 3, 4]。</li>
+                            <li><strong>电气工程</strong>：复数和傅里叶/拉普拉斯变换广泛应用于交流电路分析，表示阻抗、导纳和传递函数，从而简化复杂电路的行为预测和优化 [2, 4]。
+                            </li>
+                        </ul>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-4 mt-8">VI. 结论
+                    </h3>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>本报告对复变函数论中的核心公式、定理、鞍点法及其他常用计算方法进行了详细而严谨的推导和阐述。从复数与复平面的基础概念出发，报告深入探讨了复可微性与柯西-黎曼方程的内在联系，揭示了全纯函数作为解析函数的独特“刚性”——其局部性质决定了其全局行为，并且是无限次可微的。
+                        </p>
+                        <p>柯西积分定理、柯西积分公式和留数定理构成了复分析积分理论的基石。这些定理不仅为复积分的计算提供了强大的工具，更通过严谨的证明揭示了全纯函数与奇点之间深刻的数学结构。特别是留数定理，它将复杂的路径积分问题转化为简单的奇点留数求和，极大地简化了包括实积分在内的多种数学问题的求解。
+                        </p>
+                        <p>鞍点法作为一种重要的渐近分析技术，为处理包含大参数的复杂积分提供了有效的近似方法。其原理基于将积分路径形变为最速下降路径，并通过鞍点附近的局部展开来近似积分值。这种方法在物理学、工程学和纯粹数学的多个分支中都有着广泛的应用，例如伽马函数的渐近展开和量子力学中的路径积分。
+                        </p>
+                        <p>此外，幅角原理和鲁歇定理为零点和极点的计数提供了强大的分析工具，在方程求根和系统稳定性分析中发挥作用。共形映射则通过几何变换简化了复杂边界值问题的求解，在流体力学、静电学等领域展现出其独特的优势。傅里叶变换和拉普拉斯变换，作为将函数从时域转换到复频域的工具，在信号处理、控制系统和物理建模中具有不可或缺的地位，而留数定理在它们的逆变换计算中扮演着关键角色。
+                        </p>
+                        <p>综上所述，复变函数论不仅仅是一套抽象的数学理论，它是一门高度实用且相互关联的学科体系。其严谨的理论基础和强大的计算方法，使其成为现代科学与工程领域不可或缺的分析工具。对这些核心概念和方法的深入理解与掌握，对于解决复杂问题、推动理论研究和技术创新都具有至关重要的意义。
+                        </p>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const mapContainer = document.getElementById('map-container');
+
+            function showSection(hash) {
+                const targetHash = hash || '#introduction';
+
+                contentSections.forEach(section => {
+                    if ('#' + section.id === targetHash) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === targetHash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+
+                window.scrollTo(0, 0);
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetHash = this.getAttribute('href');
+                    history.pushState(null, null, targetHash);
+                    showSection(targetHash);
+                });
+            });
+
+            window.addEventListener('popstate', () => {
+                showSection(window.location.hash);
+            });
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const targetId = this.dataset.target;
+                    const parent = this.closest('.bg-white');
+
+                    parent.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+
+                    parent.querySelectorAll('.tab-content').forEach(content => {
+                        if (content.id === targetId) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // Set initial active tab
+            document.querySelectorAll('.bg-white').forEach(container => {
+                const firstTab = container.querySelector('.tab-button');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            });
+
+            // Initial load
+            showSection(window.location.hash);
+
+            // KaTeX rendering
+            renderMathInElement(document.body, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false },
+                    { left: "\\[", right: "\\]", display: true }
+                ]
+            });
+
+            // Concept Map Logic
+            const nodes = {
+                basics: { text: "基础概念 (全纯性, C-R方程)", x: 50, y: 5, target: '#basics' },
+                cauchy_theorem: { text: "柯西积分定理", x: 30, y: 25, target: '#core-theorems' },
+                cauchy_formula: { text: "柯西积分公式", x: 70, y: 25, target: '#core-theorems' },
+                laurent: { text: "洛朗级数 & 奇点", x: 50, y: 45, target: '#laurent-series' },
+                residue: { text: "留数定理", x: 50, y: 65, target: '#residue-theorem' },
+                saddle: { text: "鞍点法", x: 15, y: 65, target: '#saddle-point' },
+                apps: { text: "应用 (实积分等)", x: 50, y: 85, target: '#residue-theorem' },
+                other: { text: "其他方法 (幅角, 变换)", x: 85, y: 65, target: '#other-methods' },
+            };
+
+            const connections = [
+                ['basics', 'cauchy_theorem'],
+                ['basics', 'cauchy_formula'],
+                ['cauchy_theorem', 'cauchy_formula'],
+                ['cauchy_formula', 'laurent'],
+                ['laurent', 'residue'],
+                ['cauchy_theorem', 'residue'],
+                ['residue', 'apps'],
+                ['cauchy_theorem', 'saddle'],
+                ['cauchy_formula', 'other']
+            ];
+
+            function createLine(x1, y1, x2, y2) {
+                const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                const transform = `rotate(${angle}deg)`;
+
+                const line = document.createElement('div');
+                line.className = 'concept-map-line';
+                line.style.width = `${length}px`;
+                line.style.height = '2px';
+                line.style.left = `${x1}px`;
+                line.style.top = `${y1}px`;
+                line.style.transformOrigin = '0 0';
+                line.style.transform = transform;
+                return line;
+            }
+
+            if (mapContainer) {
+                const mapWidth = mapContainer.clientWidth;
+                const mapHeight = mapContainer.clientHeight;
+
+                Object.values(nodes).forEach(node => {
+                    const nodeEl = document.createElement('div');
+                    nodeEl.className = 'concept-map-node absolute p-2 md:p-3 bg-yellow-700 text-white text-xs md:text-sm font-semibold rounded-lg shadow-lg text-center';
+                    nodeEl.textContent = node.text;
+                    nodeEl.style.left = `calc(${node.x}% - 50px)`;
+                    nodeEl.style.top = `calc(${node.y}% - 20px)`;
+                    nodeEl.style.width = '100px';
+                    nodeEl.addEventListener('click', () => {
+                        history.pushState(null, null, node.target);
+                        showSection(node.target);
+                    });
+                    mapContainer.appendChild(nodeEl);
+                    node.el = nodeEl;
+                });
+
+                connections.forEach(([from, to]) => {
+                    const fromNode = nodes[from];
+                    const toNode = nodes[to];
+
+                    const x1 = (fromNode.x / 100) * mapWidth;
+                    const y1 = (fromNode.y / 100) * mapHeight;
+                    const x2 = (toNode.x / 100) * mapWidth;
+                    const y2 = (toNode.y / 100) * mapHeight;
+
+                    const lineEl = createLine(x1, y1, x2, y2);
+                    mapContainer.appendChild(lineEl);
+                });
+            }
+        });
+
+        function toggleProof(id) {
+            const content = document.getElementById(id);
+            const toggle = content.previousElementSibling;
+            const icon = toggle.querySelector('span');
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+    </script>
+</body>
+
+</html>

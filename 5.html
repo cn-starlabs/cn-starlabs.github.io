@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式方程理论知识库</title>
+    <!-- Chosen Palette: Warm Neutrals & Academic Blue -->
+    <!-- Application Structure Plan: 采用侧边栏主导航 + 内容区选项卡的结构。这种信息架构将报告的线性内容重组为非线性的、按主题探索的模式。用户可以根据兴趣直接跳转到任何方程类别（如微分方程、积分方程），而不是被迫从头到尾阅读。在每个类别内部，使用选项卡或可折叠部分进一步细分内容（如“核心概念”、“求解方法”、“关键结果”），避免信息过载，提升了导航效率和用户体验。新增“完整报告”板块，提供报告原文的便捷查阅。这种设计将一个静态的、冗长的报告转化为一个动态的、可按需访问的知识库，更符合现代Web应用的使用习惯。 -->
+    <!-- Visualization & Content Choices: 
+        1. 方程类型关系图 (HTML/CSS): 目标: 组织/关系. 方式: 使用Flexbox和边框构建的流程图，展示不同方程理论间的联系。理由: 避免使用SVG，同时直观地展示报告的核心结构。
+        2. PDE分类交互 (HTML/JS): 目标: 告知/比较. 方式: 用户点击按钮（双曲型、抛物型、椭圆型），下方会显示对应的判别式条件、典型形式和物理意义。理由: 将静态表格转化为交互式学习工具，加深用户对PDE分类的理解。
+        3. ODE通解可视化 (Chart.js/Canvas): 目标: 告知/比较. 方式: 创建一个动态图表，用户选择特征根类型（相异实根、重复实根、复共轭根），图表会实时绘制出对应的解函数曲线（如指数衰减、振荡衰减）。理由: 将抽象的数学公式转化为直观的图形，极大地增强了对解的行为的理解。
+        4. 关键结果表格 (HTML/Tailwind): 目标: 告知/组织. 方式: 使用精心设计的响应式表格来展示通解、定解和格林函数等常用结果。理由: 这是用户特别要求充实的部分，清晰、结构化的表格是最高效的呈现方式。
+        5. LaTeX公式渲染 (MathJax): 目标: 告知. 方式: 引入MathJax库来精确渲染报告中所有LaTeX格式的数学公式。理由: 保证数学符号和公式的专业性和可读性，这是科学内容展示的基础。
+        6. 完整报告集成 (HTML/CSS): 目标: 查阅/参考. 方式: 将完整的报告内容作为一个独立的、可滚动区域嵌入，方便用户查阅报告原文。理由: 满足用户对报告原文查阅的需求，提供便捷的参考。
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8f7f4;
+            color: #3d4451;
+        }
+
+        .math-inline {
+            display: inline-block;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link.active {
+            background-color: #e6e8eb;
+            color: #2c5282;
+            border-left-color: #2c5282;
+        }
+
+        .nav-link:hover {
+            background-color: #e6e8eb;
+        }
+
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            border-bottom-color: #2c5282;
+            color: #2c5282;
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            min-height: 250px;
+            /* Added min-height */
+            max-height: 45vh;
+        }
+
+        /* Styling for the full report section */
+        .full-report-content {
+            max-height: calc(100vh - 120px);
+            /* Adjust based on header/footer if any */
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .full-report-content h1,
+        .full-report-content h2,
+        .full-report-content h3,
+        .full-report-content h4 {
+            font-weight: bold;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .full-report-content h1 {
+            font-size: 2.25rem;
+        }
+
+        .full-report-content h2 {
+            font-size: 1.875rem;
+        }
+
+        .full-report-content h3 {
+            font-size: 1.5rem;
+        }
+
+        .full-report-content h4 {
+            font-size: 1.25rem;
+        }
+
+        .full-report-content p {
+            margin-bottom: 1em;
+            line-height: 1.6;
+        }
+
+        .full-report-content ul,
+        .full-report-content ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+            list-style-type: disc;
+        }
+
+        .full-report-content ol {
+            list-style-type: decimal;
+        }
+
+        .full-report-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+
+        .full-report-content th,
+        .full-report-content td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75em;
+            text-align: left;
+        }
+
+        .full-report-content th {
+            background-color: #f1f5f9;
+        }
+
+        .full-report-content pre {
+            background-color: #f1f5f9;
+            padding: 1em;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <nav class="w-full md:w-64 bg-white shadow-md md:shrink-0">
+            <div class="p-6">
+                <h1 class="text-xl font-bold text-gray-800">方程理论</h1>
+                <p class="text-sm text-gray-500 mt-1">交互式知识库</p>
+            </div>
+            <ul class="mt-2 space-y-1" id="main-nav">
+                <li><a href="#introduction" class="nav-link block p-4 text-gray-700 font-medium active">引言与概述</a></li>
+                <li><a href="#general-theory" class="nav-link block p-4 text-gray-700 font-medium">一般方程理论</a></li>
+                <li><a href="#differential-equations" class="nav-link block p-4 text-gray-700 font-medium">微分方程</a></li>
+                <li><a href="#integral-equations" class="nav-link block p-4 text-gray-700 font-medium">积分方程</a></li>
+                <li><a href="#math-physics-equations" class="nav-link block p-4 text-gray-700 font-medium">数学物理方程</a>
+                </li>
+                <li><a href="#functional-equations" class="nav-link block p-4 text-gray-700 font-medium">泛函方程</a></li>
+                <li><a href="#generalized-functions" class="nav-link block p-4 text-gray-700 font-medium">广义函数方程</a>
+                </li>
+                <li><a href="#full-report" class="nav-link block p-4 text-gray-700 font-medium">完整报告</a></li>
+                </li>
+                <li><a href="index.html" class="nav-link2 block w-full text-left px-4 py-2 rounded-lg text-gray-700 font-medium">个人主页</a></li>
+                </p>
+                <a id="cy-effective-orcid-url" class="underline" href="https://orcid.org/0009-0007-2600-0948"
+                    target="orcid.widget" rel="me noopener noreferrer" style="vertical-align: top">
+                    <img src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
+                        style="width: 1em; margin-inline-start: 0.5em" alt="ORCID iD icon" />
+                    <!-- https://orcid.org/0009-0007-2600-0948 -->
+                </a>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 bg-gray-50 overflow-y-auto">
+
+            <!-- Introduction Section -->
+            <section id="introduction" class="content-section active">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">欢迎来到方程理论交互式知识库</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    本应用旨在将《方程理论的综合解析》报告中的核心知识，通过交互式的方式呈现。方程是描述自然现象、工程系统和抽象概念的通用语言。在这里，您可以系统地探索从经典代数到现代微分方程的各类理论。</p>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-4">探索指南</h3>
+                    <p class="mb-4">
+                        请使用左侧的导航栏选择您感兴趣的方程类别。每个类别都包含核心概念、求解方法、关键定理和常用结果等详细内容。我们特别强化了可视化和交互元素，希望能帮助您更直观地理解抽象的数学理论。</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b bg-gray-100">
+                                    <th class="p-3 font-semibold">方程类型</th>
+                                    <th class="p-3 font-semibold">核心未知量</th>
+                                    <th class="p-3 font-semibold">关键特征</th>
+                                    <th class="p-3 font-semibold">典型应用领域</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">代数方程</td>
+                                    <td class="p-3">未知数（变量）</td>
+                                    <td class="p-3">多项式形式；求解变量值</td>
+                                    <td class="p-3">密码学、几何、工程设计</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">常微分方程</td>
+                                    <td class="p-3">单变量未知函数及其导数</td>
+                                    <td class="p-3">描述单变量系统变化率</td>
+                                    <td class="p-3">物理、生物模型、电路分析</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">偏微分方程</td>
+                                    <td class="p-3">多变量未知函数及其偏导数</td>
+                                    <td class="p-3">描述多维系统变化率</td>
+                                    <td class="p-3">流体、波传播、热传导</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">积分方程</td>
+                                    <td class="p-3">积分号下的未知函数</td>
+                                    <td class="p-3">描述累积效应或反演问题</td>
+                                    <td class="p-3">信号处理、弹性力学</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">泛函方程</td>
+                                    <td class="p-3">未知函数</td>
+                                    <td class="p-3">关联函数在不同输入下的关系</td>
+                                    <td class="p-3">数论、几何、动态规划</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-3">广义函数方程</td>
+                                    <td class="p-3">广义函数（分布）</td>
+                                    <td class="p-3">允许处理奇异和不连续函数</td>
+                                    <td class="p-3">点电荷、信号处理、弱解</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- General Theory Section -->
+            <section id="general-theory" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">一般方程理论：代数方程</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    代数方程是数学的基石，其核心是求解多项式方程。理论的发展历程，从三次、四次方程的求根公式，到阿贝尔-鲁菲尼定理揭示五次及以上方程无一般根式解，最终催生了深刻的伽罗瓦理论。</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">核心突破：伽罗瓦理论</h3>
+                        <p class="text-gray-700">
+                            伽罗瓦理论将方程的可解性问题与群论中的“可解群”概念联系起来，揭示了方程根的对称性结构决定了其是否能用根式求解。一个多项式方程可根式求解当且仅当其伽罗瓦群是可解群。</p>
+                        <p class="mt-4 text-sm text-blue-700 bg-blue-100 p-3 rounded-md">对于 $n \ge 5$，对称群 $S_n$
+                            不是可解群，因此一般五次及更高次多项式方程不可根式求解。</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">三次方程求根（卡尔达诺公式）</h3>
+                        <p class="text-gray-700 mb-2">对于一般三次方程 $x^3 + ax^2 + bx + c = 0$，通过代换可简化为 $y^3 + py + q =
+                            0$。其解可由卡尔达诺公式给出：</p>
+                        <p class="font-mono text-lg mb-2">$$y = \sqrt[3]{-\frac{q}{2} + \sqrt{\frac{q^2}{4} +
+                            \frac{p^3}{27}}} + \sqrt[3]{-\frac{q}{2} - \sqrt{\frac{q^2}{4} + \frac{p^3}{27}}}$$</p>
+                        <p class="text-gray-700">其中 $p = b - a^2/3$ 和 $q = c - ab/3 + 2a^3/27$。</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow mt-6">
+                    <h3 class="text-xl font-semibold mb-2">阿贝尔-鲁菲尼定理</h3>
+                    <p class="text-gray-700">该定理指出，五次或更高次多项式方程没有一般的根式解。这意味着不存在一个普适的、有限的公式，仅使用四则运算和 $n$
+                        次根式来表达所有这些方程的解。这一发现推动了伽罗瓦理论的诞生。</p>
+                </div>
+            </section>
+
+            <!-- Differential Equations Section -->
+            <section id="differential-equations" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">微分方程理论</h2>
+                <p class="text-lg text-gray-600 mb-6">微分方程描述了未知函数及其导数之间的关系，是建模物理系统变化率的核心工具。本节将分别探讨常微分方程（ODE）和偏微分方程（PDE）。
+                </p>
+
+                <!-- Tabs for ODE/PDE -->
+                <div class="border-b border-gray-300 mb-6">
+                    <nav class="flex space-x-6" id="de-tabs">
+                        <button data-target="ode-content"
+                            class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-600 hover:text-gray-800 active">常微分方程
+                            (ODE)</button>
+                        <button data-target="pde-content"
+                            class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-600 hover:text-gray-800">偏微分方程
+                            (PDE)</button>
+                    </nav>
+                </div>
+
+                <!-- ODE Content -->
+                <div id="ode-content" class="tab-content active">
+                    <h3 class="text-2xl font-semibold mb-4">常微分方程 (ODE)</h3>
+                    <p class="mb-6">ODE只涉及对单个自变量的导数。其核心问题包括解的存在性、唯一性以及求解方法。</p>
+
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h4 class="text-xl font-semibold mb-3">常系数线性ODE通解可视化</h4>
+                        <p class="mb-4">二阶常系数齐次线性ODE $ay'' + by' + cy = 0$ 的通解形式由其特征方程 $ar^2+br+c=0$
+                            的根决定。点击下方按钮，观察不同根类型对应的解函数行为。</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button onclick="updateOdeChart('real')"
+                                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">相异实根</button>
+                            <button onclick="updateOdeChart('repeated')"
+                                class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">重复实根</button>
+                            <button onclick="updateOdeChart('complex')"
+                                class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50">复共轭根</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="odeChart"></canvas>
+                        </div>
+                        <div id="ode-solution-form"
+                            class="mt-4 text-center font-mono text-lg bg-gray-100 p-3 rounded-md"></div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h4 class="text-xl font-semibold mb-3">常用求解方法</h4>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><b>分离变量法:</b> 适用于形如 $dy/dx = f(x)g(y)$ 的方程，通过将含有 $x$ 和 $y$ 的项分别移到等号两边，然后积分求解。</li>
+                            <li><b>积分因子法:</b> 用于一阶线性方程 $y' + P(x)y = Q(x)$。通过乘以一个特定的积分因子 $e^{\int
+                                P(x)dx}$，可以将方程左边转化为某个函数乘积的导数，从而简化求解。</li>
+                            <li><b>待定系数法:</b> 求解常系数非齐次线性微分方程的有效方法，当非齐次项 $f(x)$ 是多项式、指数函数、正弦或余弦函数，或它们的线性组合时。</li>
+                            <li><b>常数变易法:</b> 更通用的求解非齐次线性方程的方法，前提是已知对应齐次方程的两个线性无关解，利用Wronskian行列式构造特解。</li>
+                            <li><b>弗罗贝尼乌斯法:</b> 用于在二阶常微分方程的正则奇点附近寻找无穷级数解。</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="text-xl font-semibold mb-3">ODE通解形式速览</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-max text-left">
+                                <thead>
+                                    <tr class="border-b bg-gray-100">
+                                        <th class="p-3 font-semibold">特征方程根类型</th>
+                                        <th class="p-3 font-semibold">通解形式</th>
+                                        <th class="p-3 font-semibold">示例</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b hover:bg-gray-50">
+                                        <td class="p-3">相异实根 ($\lambda_1, \lambda_2$)</td>
+                                        <td class="p-3 font-mono">$y = c_1e^{\lambda_1x} + c_2e^{\lambda_2x}$</td>
+                                        <td class="p-3 font-mono">$y''+5y'+6y=0 \implies y=c_1e^{-2x}+c_2e^{-3x}$</td>
+                                    </tr>
+                                    <tr class="border-b hover:bg-gray-50">
+                                        <td class="p-3">重复实根 ($\lambda_1 = \lambda_2 = \lambda$)</td>
+                                        <td class="p-3 font-mono">$y = (c_1 + c_2x)e^{\lambda x}$</td>
+                                        <td class="p-3 font-mono">$y''-8y'+16y=0 \implies y=(c_1+c_2x)e^{4x}$</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="p-3">复共轭根 ($\alpha \pm i\beta$)</td>
+                                        <td class="p-3 font-mono">$y = e^{\alpha x}(c_1 \cos(\beta x) + c_2 \sin(\beta
+                                            x))$</td>
+                                        <td class="p-3 font-mono">$y''+2y'+5y=0 \implies y=e^{-x}(c_1\sin 2x+c_2\cos
+                                            2x)$</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PDE Content -->
+                <div id="pde-content" class="tab-content">
+                    <h3 class="text-2xl font-semibold mb-4">偏微分方程 (PDE)</h3>
+                    <p class="mb-6">PDE涉及对多个自变量的偏导数，用于描述场、波、热流等多维现象。</p>
+
+                    <div class="bg-white p-6 rounded-lg shadow mb-6">
+                        <h4 class="text-xl font-semibold mb-3">二阶线性PDE分类</h4>
+                        <p class="mb-4">对于方程 $Au_{xx} + 2Bu_{xy} + Cu_{yy} + \dots = 0$，其类型由判别式 $\Delta = B^2 - AC$
+                            的符号决定。点击下方按钮查看不同类型的特征。</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button onclick="showPdeInfo('hyperbolic')"
+                                class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">双曲型</button>
+                            <button onclick="showPdeInfo('parabolic')"
+                                class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">抛物型</button>
+                            <button onclick="showPdeInfo('elliptic')"
+                                class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600">椭圆型</button>
+                        </div>
+                        <div id="pde-info-display" class="mt-4 p-4 border-l-4 rounded-r-lg transition-all duration-300">
+                            <h5 id="pde-title" class="text-lg font-bold"></h5>
+                            <p id="pde-condition" class="mt-1 font-mono"></p>
+                            <p id="pde-example" class="mt-2"></p>
+                            <p id="pde-phenomenon" class="mt-1"></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h4 class="text-xl font-semibold mb-3">常用求解方法</h4>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><b>分离变量法:</b> 假设多变量函数解可以写成独立变量函数的乘积形式，将PDE分解为多个更简单的常微分方程。</li>
+                            <li><b>特征线法:</b> 主要用于求解一阶偏微分方程，将PDE转化为一组常微分方程。</li>
+                            <li><b>傅里叶级数/变换:</b> 广泛用于求解有界或无界区域的线性PDE，通过线性叠加简谐解来构造。</li>
+                            <li><b>格林函数法:</b> 将非齐次问题转化为积分形式求解（详见数学物理方程部分）。</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Integral Equations Section -->
+            <section id="integral-equations" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">积分方程理论</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    积分方程的未知函数出现在积分号内，常用于描述累积效应或从已知结果反推原因的过程。它们与微分方程密切相关，许多微分方程问题可以转化为积分方程求解。</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">分类</h3>
+                        <p class="mb-2">主要根据积分限和未知函数位置进行分类：</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li><b>Fredholm积分方程:</b> 积分限为固定的常数。
+                                <ul class="list-circle list-inside ml-4">
+                                    <li>第一类: $\int_a^b K(x,t)u(t)dt = f(x)$</li>
+                                    <li>第二类: $u(x) = f(x) + \lambda \int_a^b K(x,t)u(t)dt$</li>
+                                </ul>
+                            </li>
+                            <li><b>Volterra积分方程:</b> 一个积分限是变量。
+                                <ul class="list-circle list-inside ml-4">
+                                    <li>第一类: $\int_a^x K(x,t)u(t)dt = f(x)$</li>
+                                    <li>第二类: $u(x) = f(x) + \lambda \int_a^x K(x,t)u(t)dt$</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">关键定理：Fredholm择一</h3>
+                        <p class="text-gray-700 mb-2">对于方程 $(I-K)x=y$（$K$为紧算子），该定理指出：</p>
+                        <ul class="list-decimal list-inside space-y-2">
+                            <li>要么对任意 $y$，方程有唯一解。</li>
+                            <li>要么齐次方程 $(I-K)x=0$ 有非零解。</li>
+                        </ul>
+                        <p class="mt-4 text-sm text-green-700 bg-green-100 p-3 rounded-md">
+                            这个定理为线性算子方程解的存在性和唯一性提供了强大的理论框架，统一了代数、微分和积分方程中的相关问题。</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow mt-6">
+                    <h4 class="text-xl font-semibold mb-3">常用求解方法</h4>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><b>Neumann级数/逐次逼近法:</b> 通过迭代构造函数序列，在特定条件下收敛到方程的解。预解核是其核心概念。</li>
+                        <li><b>预解核 (Resolvent Kernel):</b> 将第二类Fredholm积分方程的解表示为 $u(x) = f(x) + \lambda \int_a^b R(x,
+                            \xi : \lambda) f(\xi) d\xi$ 的形式，其中 $R(x, \xi : \lambda)$ 由一系列迭代核构成。</li>
+                        <li><b>拉普拉斯变换:</b> 特别适用于求解卷积型Volterra积分方程，将其转换为代数方程。</li>
+                        <li><b>第一类Volterra方程到第二类Volterra方程的转换:</b> 在核函数 $K(t,t) \neq 0$
+                            的条件下，通过对第一类Volterra方程求导来将其转化为第二类Volterra方程。</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Math Physics Equations Section -->
+            <section id="math-physics-equations" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">数学物理方程</h2>
+                <p class="text-lg text-gray-600 mb-6">这是物理定律的数学表述，是连接数学与物理世界的桥梁。本节重点介绍经典方程和求解这些方程的强大工具——格林函数。</p>
+
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-xl font-semibold mb-4">经典方程一览</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>波动方程:</b>
+                            $\frac{\partial^2 u}{\partial t^2} = c^2 \nabla^2 u$</div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>热传导方程:</b>
+                            $\frac{\partial u}{\partial t} = \alpha \nabla^2 u$</div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>拉普拉斯方程:</b> $\nabla^2 u
+                            = 0$</div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>泊松方程:</b> $\nabla^2 u =
+                            -\rho/\epsilon_0$</div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>薛定谔方程:</b>
+                            $i\hbar\frac{\partial}{\partial t}\Psi = \hat{H}\Psi$</div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>麦克斯韦方程组</b></div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>纳维-斯托克斯方程</b></div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>欧拉-拉格朗日方程</b></div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>玻尔兹曼方程</b></div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>狄拉克方程</b></div>
+                        <div class="border p-3 rounded-md hover:shadow-lg transition-shadow"><b>爱因斯坦场方程</b></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-4">核心工具：格林函数 (Green's Function)</h3>
+                    <p class="mb-4">格林函数是线性微分算子的脉冲响应，即满足 $LG(x,s) = \delta(x-s)$ 的解。它允许我们将非齐次方程 $Lu=f$ 的解表示为积分形式 $u(x) =
+                        \int G(x,s)f(s)ds$。以下是一些重要方程的格林函数：</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left">
+                            <thead>
+                                <tr class="border-b bg-gray-100">
+                                    <th class="p-3 font-semibold">方程 (算子)</th>
+                                    <th class="p-3 font-semibold">区域</th>
+                                    <th class="p-3 font-semibold">格林函数 $G(x, y)$</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">拉普拉斯方程 ($\nabla^2$)</td>
+                                    <td class="p-3">二维自由空间 $\mathbb{R}^2$</td>
+                                    <td class="p-3 font-mono">$\frac{1}{2\pi} \ln(\|x-y\|)$</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">拉普拉斯方程 ($\nabla^2$)</td>
+                                    <td class="p-3">三维自由空间 $\mathbb{R}^3$</td>
+                                    <td class="p-3 font-mono">$\frac{1}{4\pi \|x-y\|}$</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-3">热方程 ($\partial_t - \alpha \nabla^2$)</td>
+                                    <td class="p-3">一维自由空间 $\mathbb{R}$</td>
+                                    <td class="p-3 font-mono">$\frac{1}{\sqrt{4\pi\alpha t}} e^{-(x-y)^2/(4\alpha t)}$
+                                        for $t>0$</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-3">波动方程 ($\partial_t^2 - c^2 \partial_x^2$)</td>
+                                    <td class="p-3">一维自由空间 $\mathbb{R}$</td>
+                                    <td class="p-3 font-mono">$\frac{1}{2c} H(c(t-s) - |x-y|)$</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-4 text-gray-700">
+                        格林函数具有对称性、唯一性，并且在处理时间相关问题时，可以分为“延迟格林函数”和“超前格林函数”。其构造方法包括本征函数展开法、镜像法和傅里叶变换。</p>
+                </div>
+            </section>
+
+            <!-- Functional Equations Section -->
+            <section id="functional-equations" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">泛函方程理论</h2>
+                <p class="text-lg text-gray-600 mb-6">泛函方程关联同一个函数在不同输入值下的关系，是数论、几何等领域的重要工具。其解的形式往往取决于是否施加连续性等正则条件。</p>
+                <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">柯西泛函方程</h3>
+                        <p class="font-mono text-lg mb-2">$f(x+y) = f(x) + f(y)$</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><b>连续解:</b> $f(x) = cx$ (其中 $c$ 是常数)。</li>
+                            <li><b>非连续解:</b> 如果不施加任何正则性条件，存在无限多个非连续的“病态”解（Hamel函数）。</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">Jensen泛函方程</h3>
+                        <p class="font-mono text-lg mb-2">$f(\frac{x+y}{2}) = \frac{f(x)+f(y)}{2}$</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><b>连续解:</b> $f(x) = cx + d$ (其中 $c, d$ 是常数)。</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">d'Alembert泛函方程</h3>
+                        <p class="font-mono text-lg mb-2">$f(x+y) + f(x-y) = 2f(x)f(y)$</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><b>连续解:</b> $f(x) = \cos(kx)$ 或 $f(x) = \cosh(kx)$ (其中 $k$ 是常数)，以及平凡解 $f(x) = 0$。</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow mt-6">
+                    <h4 class="text-xl font-semibold mb-3">常用求解方法</h4>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><b>代换法:</b> 通过巧妙的变量代换来简化方程。</li>
+                        <li><b>数学归纳法:</b> 对于定义在整数域上的泛函方程（递推关系）常用。</li>
+                        <li><b>解析延拓:</b> 在复分析中，是求解泛函方程的强大技术，尤其是在L函数等领域。</li>
+                        <li><b>模形式:</b> 在L函数等背景下被用于求解泛函方程。</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Generalized Functions Section -->
+            <section id="generalized-functions" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">广义函数方程</h2>
+                <p class="text-lg text-gray-600 mb-6">广义函数（或分布）理论扩展了经典函数的概念，允许我们严谨地处理点电荷、冲击等奇异现象。它为偏微分方程的“弱解”理论提供了基础。
+                </p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">核心思想与微分定义</h3>
+                        <p class="text-gray-700">广义函数被定义为“测试函数”空间上的连续线性泛函。微分操作通过分部积分转移到光滑的测试函数上，从而绕开了对奇异函数直接求导的困难。</p>
+                        <p class="mt-4 text-sm text-purple-700 bg-purple-100 p-3 rounded-md"><b>微分定义:</b> $\langle f',
+                            \phi \rangle = -\langle f, \phi' \rangle$</p>
+                        <p class="text-gray-700 mt-2">例如，Heaviside阶跃函数的广义导数就是狄拉克 $\delta$ 函数。</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-2">重要应用：弱解</h3>
+                        <p class="text-gray-700">对于一个PDE，将其乘以测试函数并积分，通过分部积分将导数从未知解“转移”到测试函数上，得到方程的“弱形式”。</p>
+                        <p class="mt-4 text-gray-700">这种方法允许我们寻找那些不一定经典可微的解，极大地扩展了可解问题的范围，对物理建模至关重要。</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow mt-6">
+                    <h4 class="text-xl font-semibold mb-3">应用领域</h4>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><b>物理学和工程学:</b> 广泛用于建模具有奇异点和不连续性的物理系统，例如电荷分布、波的传播和点源问题。格林函数本身就是广义函数理论的一个重要应用。</li>
+                        <li><b>信号处理和滤波器理论:</b> 用于建模具有不连续性或奇异点的信号，并分析滤波器的性质。</li>
+                        <li><b>傅里叶变换:</b> 傅里叶变换对于紧支集广义函数是良好定义的。卷积定理也扩展到了广义函数。</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Full Report Section -->
+            <section id="full-report" class="content-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">完整报告：方程理论的综合解析</h2>
+                <div class="full-report-content">
+                    <h1>报告：方程理论的综合解析</h1>
+
+                    <h2>引言</h2>
+
+                    <p>方程是数学的核心，是描述自然现象、工程系统和抽象概念的通用语言。它们将物理量、变化率和相互作用联系起来，是科学和工程进步的基石 [1, 2,
+                        3]。从经典力学中物体运动的描述，到量子力学中粒子行为的预测，再到流体动力学中复杂流动的模拟，方程无处不在。它们为我们理解和预测物理世界提供了必不可少的框架，揭示了从宏观运动到微观粒子行为，乃至统计现象的深层规律
+                        [1]。这种跨学科的普遍适用性，使得方程理论不仅仅是数学的一个分支，更是科学探究的基石，它提供了一种统一的语言，能够将看似独立的物理现象和抽象概念，通过共同的数学结构联系起来。</p>
+
+                    <p>本报告旨在对数学中各类方程理论进行详细、完整和严谨的阐述，涵盖其基本概念、分类、常用结果（通解、特解、定解、格林函数等）、公式、定理、恒等式、与其他方面的联系与区别，以及各类求解方法。报告将从代数方程的一般理论出发，逐步深入到微分方程、积分方程、数学物理方程、泛函方程和广义函数方程，最后探讨其交叉领域和数值求解方法。
+                    </p>
+
+                    <p>下表提供了本报告所涵盖的主要方程类型及其核心特征和典型应用领域，以期为读者提供一个快速、高层次的概览。</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>方程类型</th>
+                                <th>核心未知量</th>
+                                <th>关键特征</th>
+                                <th>典型应用领域</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>代数方程</td>
+                                <td>未知数（变量）</td>
+                                <td>多项式形式；求解变量值</td>
+                                <td>密码学、几何、计算机科学、工程设计</td>
+                            </tr>
+                            <tr>
+                                <td>常微分方程</td>
+                                <td>单变量未知函数及其导数</td>
+                                <td>描述单变量系统变化率；仅含一个自变量</td>
+                                <td>物理、工程、生物模型、经济学、电路分析</td>
+                            </tr>
+                            <tr>
+                                <td>偏微分方程</td>
+                                <td>多变量未知函数及其偏导数</td>
+                                <td>描述多维系统变化率；含多个自变量的偏导数</td>
+                                <td>物理场、流体、波传播、热传导、量子力学</td>
+                            </tr>
+                            <tr>
+                                <td>积分方程</td>
+                                <td>积分号下的未知函数</td>
+                                <td>描述累积效应或从已知量反推未知量</td>
+                                <td>物理、工程、量子力学、信号处理、弹性力学</td>
+                            </tr>
+                            <tr>
+                                <td>泛函方程</td>
+                                <td>未知函数</td>
+                                <td>关联函数在不同输入值下的关系</td>
+                                <td>数论、分析、几何、动态规划、信息论</td>
+                            </tr>
+                            <tr>
+                                <td>广义函数方程</td>
+                                <td>广义函数（分布）</td>
+                                <td>允许处理奇异和不连续函数；通过测试函数定义</td>
+                                <td>物理（点电荷、点力）、信号处理、偏微分方程弱解</td>
+                            </tr>
+                            <tr>
+                                <td>数学物理方程</td>
+                                <td>特定物理现象的微分/积分方程</td>
+                                <td>物理定律的数学表述；通常是微分或积分方程</td>
+                                <td>经典物理、量子力学、相对论、流体力学、电磁学</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h2>一、一般方程理论</h2>
+
+                    <h3>代数方程</h3>
+
+                    <p>代数方程，特别是多项式方程，是数学中最古老且基础的方程类型。其历史可追溯至公元前1700年，巴比伦人已能熟练求解二次方程
+                        [4]。这种“修辞代数”阶段，即以文字问题形式表述和求解方程，一直持续到16世纪。</p>
+
+                    <p>16世纪是代数方程理论发展的一个里程碑。意大利数学家们相继发现了三次和四次方程的求根公式。三次方程的卡尔达诺公式（Cardano's formula）通过一系列巧妙的代换来实现求解
+                        [5]。首先，通过Tchirnhaus变换将一般的三次方程 $x^3 + ax^2 + bx + c = 0$ 简化为不含二次项的“亏格”形式 $y^3 + py + q =
+                        0$。随后，引入代换 $y = u - v$，将方程转化为 $(q - (v^3 - u^3)) + (u - v)(p - 3uv) = 0$。通过设定 $q = v^3 - u^3$ 和
+                        $p = 3uv$，问题被简化为求解一个关于 $u^3$ 的二次方程。解出 $u^3$ 和 $v^3$ 后，即可回代求得 $y$，进而得到 $x$ 的值
+                        [5]。四次方程的费拉里方法（Ferrari's method）也依赖于类似的策略，通过引入辅助变量将四次方程转化为一个立方方程的求解 [6,
+                        7]。这些突破性进展，使得代数方程的求解在当时达到了前所未有的深度。</p>
+
+                    <p>直到19世纪末，“方程理论”几乎与“代数”同义，主要关注单个非线性多项式方程的求解 [8]。多项式方程的解通常指那些可以用四则运算和 $n$ 次根式表示的公式 [8,
+                        9]。这种形式的解被称为“根式解”。</p>
+
+                    <p>然而，这种对根式解的追求在五次及更高次方程上遇到了根本性的障碍。阿贝尔-鲁菲尼定理（Abel-Ruffini theorem）明确指出，五次或更高次多项式方程没有一般的根式解 [9,
+                        10]。这意味着，不存在一个普适的、有限的公式，仅使用四则运算和 $n$ 次根式来表达所有这些方程的解。这一发现标志着代数理论发展的一个重要转折点。</p>
+
+                    <p>面对这一计算上的困境，数学家们并未止步于此，而是被迫进行更深层次的探究，追问为何高次方程无法通过根式求解。这种对“不可能”的深入理解，直接催生了伽罗瓦理论（Galois
+                        theory）和抽象代数（Abstract Algebra）的诞生 [4, 8, 9, 10]。伽罗瓦理论彻底解决了何时代数方程具有根式解的问题 [4, 8, 9,
+                        10]。其核心在于，一个多项式方程可根式求解当且仅当其伽罗瓦群是可解群 [10]。伽罗瓦群是一个由方程根的置换构成的群，它编码了方程根之间的对称性。对于 $n \ge 5$ 的对称群
+                        $S_n$（表示 $n$ 个元素的任意置换），它不是可解群，这直接导致了一般五次及更高次多项式方程不可根式求解
+                        [10]。这一理论上的突破，将方程的求解问题从单纯的计算层面提升到对底层代数结构和对称性的理解，实现了从“如何求解特定方程”到“决定可解性的底层代数结构是什么”的深刻转变。</p>
+
+                    <p>抽象代数是关于集合与特定运算的数学分支，它将整数和有理数等熟悉概念推广到更广义的代数结构，如群、环、域和向量空间 [4,
+                        11]。这些抽象结构为理解方程的可解性提供了坚实的基础。伽罗瓦理论作为抽象代数的重要组成部分，通过将方程的可解性问题与群论中的可解群概念联系起来，揭示了代数方程深层的结构性质 [9, 10]。
+                    </p>
+
+                    <p>尽管阿贝尔-鲁菲尼定理严格证明了五次及更高次多项式方程不存在一般的根式解，但值得注意的是，这并不意味着任何特定的高次方程都无法通过根式求解。例如，方程 $x^5 - 1 = 0$
+                        就可以通过根式求解
+                        [9]。现代计算技术的发展进一步模糊了理论上的“不可能”与实践中的“可实现”之间的界限。伽罗瓦理论提供了判断一个特定多项式是否可根式求解的精确准则，而现代计算机程序能够对高次多项式（甚至超过100次）进行这种判断，并计算出可解方程的根式解
+                        [9]。这表明，方程理论已经超越了对普适封闭形式解的单一追求，转而拥抱算法方法，利用抽象代数提供的结构性理解来指导复杂特定问题的计算策略，从而弥合了纯粹数学理论与应用计算实践之间的鸿沟。
+                    </p>
+
+                    <h3>方程的分类与基本性质</h3>
+
+                    <p>除了多项式方程，方程理论还涵盖了其他多种类型，每种类型都有其独特的性质和应用领域。线性方程，例如 $ax+b=0$ 形式的方程，其求解在古代就已完成
+                        [8]。线性方程组，如多个线性方程组成的系统，其理论解法由伽布里埃尔·克拉默（Gabriel Cramer）于1750年提出，而高效的求解算法（线性代数领域）至今仍是活跃的研究课题
+                        [8]。丢番图方程（Diophantine equations）则专注于寻找方程或方程组的整数解，属于数论范畴
+                        [8]。此外，多项式方程组由于其复杂性，直到19世纪下半叶才开始被深入研究，并促成了代数几何领域的发展 [8]。这些不同类型的方程共同构成了广阔的方程理论体系。</p>
+
+                    <h2>二、微分方程理论</h2>
+
+                    <p>微分方程是数学中极其重要的一类方程，它们将未知函数与其导数联系起来，是描述物理量变化率及其相互关系的强大工具 [2, 3]。</p>
+
+                    <h3>常微分方程 (Ordinary Differential Equations - ODEs)</h3>
+
+                    <p>常微分方程（ODE）是包含一个未知函数及其对单个自变量的导数的方程 [2, 3]。例如，描述物体运动的牛顿第二定律 $F = ma$ 在数学上常被表述为一个常微分方程
+                        [1]。方程的“阶”由其中出现的最高阶导数决定，而“次”（或称“度”）则是最高阶导数的幂 [3]。例如，$dy/dx = 3x + 2$ 是一阶一次方程，而 $(d^2y/dx^2) +
+                        2(dy/dx) + y = 0$ 则是二阶一次方程 [3]。</p>
+
+                    <p>如果未知函数及其导数在方程中都是线性的，则称之为线性微分方程；否则为非线性微分方程 [2]。线性方程的理论发展相对完善，在许多情况下，其解可以表示为积分形式
+                        [2]。物理学中遇到的许多常微分方程都是线性的，例如谐振子方程
+                        [2]。相比之下，非线性方程通常难以精确求解，可能表现出非常复杂的行为，例如混沌现象。非线性微分方程解的存在性、唯一性以及解的延拓性等基本问题，都是数学上的难题，其在特殊情况下的解决被认为是数学领域的重大进展
+                        [2]。</p>
+
+                    <p>常微分方程的解可以分为通解和特解。通解是包含与方程阶数相同数量的任意常数的解，它代表了方程所有可能解的族。特解则是通过给定特定条件（如初始条件或边界条件）来确定这些任意常数后得到的唯一解 [3,
+                        12]。对于非齐次线性微分方程，其通解是对应齐次方程的通解与非齐次方程的任何一个特解的线性组合 [12]。</p>
+
+                    <p>在常微分方程理论中，解的存在性与唯一性是核心问题。皮卡-林德洛夫定理（Picard-Lindelöf
+                        theorem），也称为皮卡存在性定理或柯西-利普希茨定理，为初值问题解的存在性和唯一性提供了充分条件 [13, 14, 15]。该定理要求函数 $f(t,x)$ 在 $x$
+                        上是Lipschitz连续的，在 $t$ 上是连续的 [14]。Lipschitz连续性是一个比简单连续性更强的条件，它确保了函数的变化不会过快
+                        [14]。这一条件对于保证解的唯一性至关重要，意味着初始条件的微小变化只会导致解的微小变化，这种对初始条件的连续依赖性对于建模真实世界系统，尤其是那些初始条件存在不确定性的系统，是至关重要的
+                        [14]。皮卡-林德洛夫定理的证明通常依赖于将微分方程转化为一个等价的积分方程，然后应用巴拿赫不动点定理（Banach fixed-point theorem）来证明解的存在性和唯一性
+                        [13,
+                        15]。这种从微分形式到积分形式的转化，是证明常微分方程基本性质的强大分析策略。积分算子通常具有比微分算子更适合泛函分析工具的性质，例如紧性或收缩映射性，这使得在积分框架下进行严格证明更为便利。因此，积分方程的研究不仅与微分方程并行，有时更是其基础，为严格证明微分方程的性质提供了更根本的框架。
+                    </p>
+
+                    <p>常微分方程的求解方法多种多样，以下是一些常用的方法：</p>
+                    <ul>
+                        <li><b>分离变量法 (Separation of Variables)：</b> 适用于形如 $dy/dx = f(x)g(y)$ 的方程，通过将含有 $x$ 和 $y$
+                            的项分别移到等号两边，然后积分求解 [3, 16]。</li>
+                        <li><b>积分因子法 (Integrating Factors)：</b> 主要用于求解一阶线性方程 $dy/dx + P(x)y = Q(x)$。通过乘以一个特定的积分因子
+                            $e^{\int P(x)dx}$，可以将方程左边转化为某个函数乘积的导数，从而简化求解 [3, 17]。</li>
+                        <li><b>待定系数法 (Undetermined Coefficients)：</b> 这是一种求解常系数非齐次线性微分方程的有效方法，尤其当非齐次项 $f(x)$
+                            是多项式、指数函数、正弦或余弦函数，或它们的线性组合时 [18, 19, 20]。该方法的核心思想是根据 $f(x)$
+                            的形式猜测一个特解的形式，其中包含待定系数，然后将其代入原方程，求解这些系数 [18, 19,
+                            21]。如果初步猜测的特解形式与对应齐次方程的通解中的某个项重叠，则需要对猜测形式进行调整，通常是乘以 $x$ 或 $x^2$ 等因子，以确保其线性无关性 [18, 19]。</li>
+                        <li><b>常数变易法 (Variation of Parameters)：</b> 适用于求解任意非齐次线性微分方程，前提是已知对应齐次方程的两个线性无关解
+                            [22]。该方法通过将齐次解中的常数替换为未知函数，并利用Wronskian行列式（Wronskian determinant）构造一个通用公式来求解特解
+                            [22]。Wronskian行列式是判断一组函数（特别是齐次线性微分方程的解）是否线性无关的关键工具 [23,
+                            24]。如果Wronskian在区间内某点非零，则这些函数是线性无关的，这对于构造完整的通解至关重要 [23]。</li>
+                        <li><b>弗罗贝尼乌斯法 (Frobenius Method)：</b> 用于在二阶常微分方程的正则奇点附近寻找无穷级数解 [25, 26]。该方法假设解的形式为 $y = (x -
+                            x_0)^r \sum_{k=0}^{\infty} a_k (x - x_0)^k$，其中 $x_0$ 是正则奇点。将此级数形式代入方程，可以推导出决定指数 $r$
+                            的指标方程（indicial equation）和系数 $a_k$ 之间的递推关系（recurrence relation）[25, 26]。通过解指标方程得到 $r$
+                            的值，并利用递推关系确定 $a_k$，从而得到方程的级数解 [25]。</li>
+                    </ul>
+
+                    <h3>偏微分方程 (Partial Differential Equations - PDEs)</h3>
+
+                    <p>偏微分方程（PDE）是包含未知多变量函数及其偏导数的方程 [2, 27]。它们用于描述涉及多个自变量的现象，例如空间和时间
+                        [27]。自然界中的多种现象，如声波、热传导、电磁学、流体流动、弹性力学或量子力学，都可以用偏微分方程来描述 [2]。</p>
+
+                    <p>二阶偏微分方程根据其判别式 $B^2 - AC$ 可以分为三类 [28, 29]：</p>
+                    <ul>
+                        <li><b>双曲型 (Hyperbolic)：</b> 当 $B^2 - AC > 0$ 时，例如波动方程，描述波的传播现象 [28]。</li>
+                        <li><b>抛物型 (Parabolic)：</b> 当 $B^2 - AC = 0$ 时，例如热传导方程（或扩散方程），描述热量或物质的扩散过程 [28]。</li>
+                        <li><b>椭圆型 (Elliptic)：</b> 当 $B^2 - AC < 0$ 时，例如拉普拉斯方程或泊松方程，描述稳态过程或平衡状态，如静电势或稳态流体流动 [28]。</li>
+                    </ul>
+
+                    <p>偏微分方程的完整描述通常需要初始条件和边界条件 [30]。初始条件指定了物理过程在某个固定时刻的状态，例如弦在 $t=0$ 时的初始位移和初始速度
+                        [30]。边界条件则指定了介质边界上的状态，例如弦的末端是固定（位移为零）还是自由（导数为零）[30]。对于热方程，边界条件可以指定边界上的温度分布或热流 [30]。</p>
+
+                    <p>初始条件和边界条件共同构成了边值条件。如果一个问题只涉及初始条件（且区域是整个空间），则称为柯西问题（Cauchy problem）[30]。例如，无限长弦的波动方程的初始值问题就是一个柯西问题
+                        [30]。如果问题同时涉及初始条件和边界条件，则称为混合问题
+                        [30]。这些条件的具体选择，直接且深刻地决定了方程解的数学性质和物理表现。例如，波动方程在无限域（柯西问题）下可能产生行波解（如d'Alembert解），而同样的方程在固定边界的有界域（混合问题）下则会产生驻波解（通过傅里叶级数）[31,
+                        32, 33]。这表明，物理系统的边界条件，作为物理现实的体现，能够将广义的数学形式转化为特定的、可观测的物理行为。</p>
+
+                    <p>偏微分方程的解可以是通解（包含任意函数）或特解（满足特定条件）[28]。由于PDE的复杂性，寻找通解通常比ODE更困难。</p>
+
+                    <p>偏微分方程的求解方法包括：</p>
+                    <ul>
+                        <li><b>分离变量法 (Separation of Variables)：</b>
+                            这种方法假设多变量函数解可以写成独立变量函数的乘积形式，从而将一个复杂的PDE分解为多个更简单的常微分方程 [31, 34,
+                            35]。该方法广泛应用于求解热方程、波动方程和拉普拉斯方程等 [34]。</li>
+                        <li><b>特征线法 (Method of Characteristics)：</b> 主要用于求解一阶偏微分方程，其核心思想是将PDE转化为一组常微分方程（称为特征方程）[29,
+                            36]。对于形如 $a(x,y)u_x + b(x,y)u_y = c(x,y)$ 的方程，通过求解特征方程组 $dx/ds = a$, $dy/ds = b$, $dz/ds =
+                            c$ 来构造解曲面 [29, 36]。这种方法将一个困难的PDE问题简化为一组可解的ODE问题 [29]。</li>
+                        <li><b>傅里叶级数/变换 (Fourier Series/Transforms)：</b> 傅里叶级数广泛用于求解具有边界条件（如固定端点）的波动方程和热方程 [31, 32, 34,
+                            35, 37]。它将初始条件和边界条件分解为简谐函数的叠加，然后利用线性叠加原理构造满足所有条件的解 [31, 32, 34, 35,
+                            37]。傅里叶变换则适用于无限域问题，将微分方程转化为代数方程或更简单的微分方程在频域中求解 [38]。</li>
+                    </ul>
+
+                    <p>在偏微分方程理论中，适定性（Well-posedness）是一个关键概念，由阿达马（Hadamard）提出，它要求一个问题满足三个条件：解存在、解唯一、解连续依赖于初始数据和边界条件 [39,
+                        40]。如果一个问题不满足这些条件，则称之为不适定问题（Ill-posed
+                        problem）[39]。不适定问题可能没有解、解不唯一，或者对初始数据和边界条件的微小变化高度敏感，导致解发生巨大变化
+                        [39]。例如，逆热方程（根据最终温度分布推断初始温度分布）就是一个典型的不适定问题 [39]。</p>
+
+                    <p>适定性并非仅仅是数学上的形式要求，它具有深刻的物理意义。例如，皮卡-林德洛夫定理（Picard-Lindelöf
+                        theorem）保证了常微分方程解的这些性质，这对于动力系统理论至关重要，因为它确保了建模系统的可预测性
+                        [14]。如果一个物理过程由一个不适定的偏微分方程建模，那么即使初始测量中存在微小的误差，也可能导致预测结果的巨大差异，使得模型在实际预测中变得不可靠。因此，数学上的适定性是物理模型具有实际意义和预测能力的先决条件。这强调了抽象数学严谨性在应用科学中的深远实际影响，理论上的保证直接转化为科学模型的可靠性和实用性。
+                    </p>
+
+                    <p>下表总结了常见的二阶偏微分方程分类及其物理类型和示例：</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>分类</th>
+                                <th>判别式条件</th>
+                                <th>典型形式</th>
+                                <th>物理类型</th>
+                                <th>示例方程</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>双曲型</td>
+                                <td>$B^2 - AC > 0$</td>
+                                <td>$\partial^2 u / \partial \xi \partial \eta + \dots = 0$</td>
+                                <td>波传播</td>
+                                <td>波动方程</td>
+                            </tr>
+                            <tr>
+                                <td>抛物型</td>
+                                <td>$B^2 - AC = 0$</td>
+                                <td>$\partial^2 u / \partial \eta^2 + \dots = 0$</td>
+                                <td>热传导/扩散</td>
+                                <td>热传导方程</td>
+                            </tr>
+                            <tr>
+                                <td>椭圆型</td>
+                                <td>$B^2 - AC < 0$</td>
+                                <td>$\partial^2 u / \partial \alpha^2 + \partial^2 u / \partial \beta^2 + \dots = 0$
+                                </td>
+                                <td>平衡/稳态</td>
+                                <td>拉普拉斯方程</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>对于常微分方程，其通解形式常取决于特征方程根的类型：</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>特征方程根类型</th>
+                                <th>通解形式</th>
+                                <th>示例</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>相异实根 ($\lambda_1, \lambda_2$)</td>
+                                <td>$y = c_1e^{\lambda_1x} + c_2e^{\lambda_2x}$</td>
+                                <td>$y''+5y'+6y=0 \implies y=c_1e^{-2x}+c_2e^{-3x}$ [17]</td>
+                            </tr>
+                            <tr>
+                                <td>重复实根 ($\lambda_1 = \lambda_2 = \lambda$)</td>
+                                <td>$y = (c_1 + c_2x)e^{\lambda x}$</td>
+                                <td>$y''-8y'+16y=0 \implies y=(c_1+c_2x)e^{4x}$ [41]</td>
+                            </tr>
+                            <tr>
+                                <td>复共轭根 ($\alpha \pm i\beta$)</td>
+                                <td>$y = e^{\alpha x}(c_1 \cos(\beta x) + c_2 \sin(\beta x))$</td>
+                                <td>$y''+2y'+5y=0 \implies y=e^{-x}(c_1\sin 2x+c_2\cos 2x)$ [17]</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>下表提供了常微分方程和偏微分方程常用求解方法的速览：</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>方法</th>
+                                <th>适用方程类型</th>
+                                <th>核心思想</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>分离变量法</td>
+                                <td>ODEs (特定形式), PDEs (特定几何)</td>
+                                <td>将方程分解为更简单的ODE</td>
+                            </tr>
+                            <tr>
+                                <td>积分因子法</td>
+                                <td>一阶线性ODE</td>
+                                <td>乘以一个函数使左边变为乘积的导数</td>
+                            </tr>
+                            <tr>
+                                <td>待定系数法</td>
+                                <td>常系数非齐次ODE</td>
+                                <td>猜测特解形式并代入求解系数</td>
+                            </tr>
+                            <tr>
+                                <td>常数变易法</td>
+                                <td>非齐次线性ODE</td>
+                                <td>将齐次解中的常数替换为函数，利用Wronskian</td>
+                            </tr>
+                            <tr>
+                                <td>弗罗贝尼乌斯法</td>
+                                <td>二阶ODE (正则奇点)</td>
+                                <td>寻找幂级数解，推导指标方程和递推关系</td>
+                            </tr>
+                            <tr>
+                                <td>特征线法</td>
+                                <td>一阶PDE</td>
+                                <td>将PDE转化为ODE组，沿特征线求解</td>
+                            </tr>
+                            <tr>
+                                <td>傅里叶级数/变换</td>
+                                <td>线性PDE (有界/无限域)</td>
+                                <td>线性叠加简谐解，利用正交性确定系数</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h2>三、积分方程理论</h2>
+
+                    <p>积分方程是数学中一类重要的方程，其核心特征是未知函数出现在积分号下 [42, 43, 44]。它们在物理学、工程学和量子力学等多个领域中扮演着关键角色，能够描述累积效应或从已知量反推未知量
+                        [42, 44]。</p>
+
+                    <p>积分方程主要根据积分限和未知函数出现的位置进行分类：</p>
+                    <ul>
+                        <li><b>Fredholm积分方程 (Fredholm Integral Equation)：</b> 积分限是固定的常数 [43, 44]。</li>
+                        <li><b>Volterra积分方程 (Volterra Integral Equation)：</b> 一个积分限是变量 [43, 44]。</li>
+                        <li><b>第一类积分方程 (First Kind)：</b> 未知函数只出现在积分号内 [43, 44]。例如，Fredholm第一类方程可表示为 $\int_a^b
+                            K(x,t)u(t)dt = f(x)$ [43, 45]。</li>
+                        <li><b>第二类积分方程 (Second Kind)：</b> 未知函数同时出现在积分号内外 [43, 44]。例如，Fredholm第二类方程可表示为 $u(x) = f(x) +
+                            \lambda \int_a^b K(x,t)u(t)dt$ [43, 45]。Volterra第二类方程可表示为 $x(t) = f(t) + \int_a^t
+                            K(t,s)x(s)ds$ [46]。</li>
+                    </ul>
+
+                    <p>积分方程与微分方程之间存在着密切的联系。在许多情况下，积分方程源于微分方程的边值问题或初值问题的转换 [44, 47]。例如，格林函数（Green's
+                        function）就是一种强大的工具，能够将微分方程问题转化为积分方程，从而简化求解过程 [48, 49,
+                        50]。这种转化不仅是数学上的等价，更常常带来战略性的优势。虽然微分方程在许多物理模型中是首要的描述工具，但积分方程的表述有时更为简洁和优雅
+                        [47]。一个重要的区别在于，积分方程通常不需要像微分方程那样明确地设定初始条件或边界条件 [47]。微分方程需要这些条件来确定唯一解，这可能会使问题的设置和分析变得复杂
+                        [30]。相比之下，积分形式常常能够将其内在整合到核函数或方程结构中，从而实现更统一、有时更简化的数学处理。因此，将问题从微分形式转换为积分形式，不仅仅是一种替代表示，更是一种战略性的简化，尤其在处理复杂边界条件或寻求理论存在性证明时。
+                    </p>
+
+                    <p>积分方程的解是满足方程的未知函数。对于积分方程的求解，以下是一些常用方法：</p>
+                    <ul>
+                        <li><b>Neumann级数/逐次逼近法 (Neumann Series/Successive Approximations)：</b>
+                            这是求解第二类Fredholm或Volterra积分方程的常用方法 [43, 45, 47, 51]。该方法通过迭代构造一个函数序列，该序列在特定条件下收敛到方程的解 [15,
+                            52]。</li>
+                        <li><b>预解核 (Resolvent Kernel)：</b> 预解核是Neumann级数的核心概念，它将第二类Fredholm积分方程的解表示为 $u(x) = f(x) +
+                            \lambda \int_a^b R(x, \xi : \lambda) f(\xi) d\xi$ 的形式 [53]。其中 $R(x, \xi : \lambda)$
+                            是预解核，它由一系列迭代核 $K_n(x, \xi)$ 的无穷级数构成，即 $R(x, \xi : \lambda) = \sum_{n=1}^{\infty}
+                            \lambda^{n-1} K_n(x, \xi)$ [53, 54]。迭代核 $K_{n+1}(x, \xi)$ 定义为对 $K(x, t)K_n(t, \xi)$ 在积分域上的积分
+                            [53]。</li>
+                        <li><b>拉普拉斯变换 (Laplace Transform)：</b> 特别适用于求解卷积型Volterra积分方程
+                            [46]。通过将积分方程转换为代数方程，简化求解过程，然后进行逆变换得到原函数的解 [55]。</li>
+                        <li><b>第一类Volterra方程到第二类Volterra方程的转换 (Conversion of Volterra 1st Kind to 2nd Kind)：</b> 在核函数
+                            $K(t,t) \neq 0$ 的条件下，可以通过对第一类Volterra方程求导来将其转化为第二类Volterra方程 [46]。具体步骤包括对第一类方程两边求导，然后除以
+                            $K(t,t)$，并重新定义函数和核 [46]。</li>
+                    </ul>
+
+                    <p>弗雷德霍姆择一定理（Fredholm Alternative Theorem）是泛函分析中的一个关键定理，它用于判断涉及紧算子的方程何时有解 [56, 57]。对于形如 $(I - K)x =
+                        y$ 的方程（其中 $I$ 是恒等算子，$K$ 是紧算子），该定理指出，要么对所有 $y$ 都存在唯一的解，要么齐次方程 $(I - K)x = 0$ 存在非零解 [56]。</p>
+
+                    <p>该定理在积分方程和边值问题中有着广泛的应用 [56]。对于Fredholm第二类积分方程，其积分算子 $K$ 通常是紧的，因此Fredholm择一定理可以直接应用 [56]。如果参数
+                        $\lambda$ 不是算子 $K$ 的特征值，则方程对每个非齐次项 $f$ 都有唯一解
+                        [56]。此外，格林函数可以将微分方程的边值问题转化为Fredholm积分方程，进而应用Fredholm择一定理来确定解的存在性和唯一性 [56]。</p>
+
+                    <p>弗雷德霍姆择一定理的引入，标志着数学对可解性问题的理解从具体方程形式转向了更抽象的算子理论。它将焦点从微分或积分方程的特定形式，转移到定义这些方程的线性算子的底层性质，特别是其紧性。该定理提供了一个强大的二元可解性条件：要么唯一解总是存在，要么齐次问题存在非平凡解，进而对非齐次项施加正交性条件才能保证解的存在。这种抽象化揭示了线性算子的一种深层统一结构性质，它超越了具体的数学领域，为理解代数系统、常微分方程、偏微分方程和积分方程中的存在性和唯一性提供了共同的框架。这意味着，理解算子的抽象性质（例如紧性、谱）对于理解广泛数学问题的可解性和解的性质至关重要。
+                    </p>
+
+                    <h2>四、数学物理方程</h2>
+
+                    <p>数学物理方程是数学物理学的核心，它们是描述自然界各种物理现象的数学模型，连接了经典力学、电磁学、量子力学和热力学等多个领域 [1,
+                        30]。这些方程不仅提供了理解物理世界的框架，也是预测和分析复杂物理行为的强大工具。</p>
+
+                    <h3>经典方程及其物理背景</h3>
+
+                    <ul>
+                        <li><b>波动方程 (Wave Equation)：</b> 这是一个二阶偏微分方程，描述波在介质中的传播，例如声波、光波和水波 [1, 28, 30]。其形式通常为
+                            $\frac{\partial^2 u}{\partial t^2} = a^2 \Delta u + f(x, t)$ [30]。</li>
+                        <li><b>热方程 (Heat Equation)：</b> 这是一个偏微分方程，描述热量（或温度）在给定区域随时间分布的过程，如热传导和扩散 [1, 28, 30]。其典型形式为
+                            $\frac{\partial u}{\partial t} = a^2 \Delta u + f(x, t)$ [30]。</li>
+                        <li><b>拉普拉斯方程 (Laplace Equation) 和 泊松方程 (Poisson Equation)：</b>
+                            这两者都是椭圆型偏微分方程，描述稳态过程和各种势，如静电势、引力势以及不可压缩流体中的势流 [28, 30]。拉普拉斯方程 $\Delta u = 0$ 是泊松方程 $\Delta u
+                            = -f(x)$ 的齐次形式 [30]。</li>
+                        <li><b>亥姆霍兹方程 (Helmholtz Equation)：</b> 如果波动方程中的外部扰动是周期性的，那么周期解的幅度就满足亥姆霍兹方程 $\Delta u + k^2 u =
+                            -f(x)$ [30]。该方程常用于散射（衍射）问题。</li>
+                        <li><b>麦克斯韦方程组 (Maxwell's Equations)：</b> 这是一组四个方程，描述了电场和磁场如何相互作用和传播，将电、磁和光学统一到一个单一的理论框架中
+                            [1]。它们是理解电磁波（包括光）的基础。</li>
+                        <li><b>薛定谔方程 (Schrödinger Equation)：</b> 量子力学中的基本方程，描述物理系统的量子态如何随时间变化
+                            [1]。它提供了计算粒子波函数的方法，波函数包含了系统所有信息 [1]。</li>
+                        <li><b>纳维-斯托克斯方程 (Navier-Stokes Equations)：</b> 描述流体物质的运动，是流体动力学的基础
+                            [1]。它们考虑了粘度和湍流，对于工程、气象学和海洋学中的流体行为建模至关重要 [1]。</li>
+                        <li><b>欧拉-拉格朗日方程 (Euler-Lagrange Equation)：</b> 这是变分法中的一个关键结果，用于推导系统运动方程
+                            [1]。通过最小化作用量，它提供了一种强大的方法来分析力学系统，在经典力学和场论中都具有基础性地位 [1]。</li>
+                        <li><b>玻尔兹曼方程 (Boltzmann Equation)：</b> 描述非平衡热力学系统的统计行为
+                            [1]。它在微观粒子动力学与宏观性质（如温度和压力）之间建立了联系，是统计力学和动力学理论的基础 [1]。</li>
+                        <li><b>狄拉克方程 (Dirac Equation)：</b> 一个相对论性波方程，描述费米子（如电子），它将量子力学和狭义相对论结合起来
+                            [1]。该方程预测了反物质的存在，并解释了粒子的自旋，是量子场论和粒子物理学的核心 [1]。</li>
+                        <li><b>爱因斯坦场方程 (Einstein's Field Equations)：</b> 广义相对论的核心，它建立了时空几何与物质能量分布之间的关系
+                            [1]。这些方程解释了引力是时空弯曲的结果，并预测了黑洞和引力波等现象 [1]。</li>
+                    </ul>
+
+                    <h3>边界值问题与初始值问题</h3>
+
+                    <p>物理过程的完整描述通常需要初始条件和边界条件 [30]。初始条件指定了过程在某个固定时刻的状态，例如在 $t=0$
+                        时刻的初始位移和速度。边界条件则指定了过程发生介质的边界上的状态，例如在区域边界上固定温度或规定热流
+                        [30]。这些初始条件和边界条件共同构成了边值条件，它们与微分方程一起定义了数学物理中的边值问题 [30]。</p>
+
+                    <p>如果一个边值问题只涉及初始条件（并且定义域是整个空间），则称为柯西问题（Cauchy problem）[30]。例如，波动方程在整个空间 $R^n$ 上的初始值问题就是一个柯西问题
+                        [30]。如果问题同时涉及初始条件和边界条件，则称为混合问题 [30]。例如，在有界区域内，波动方程或热方程在给定初始状态和边界约束下的问题就是混合问题 [30]。</p>
+
+                    <p>这种初始和边界条件的选择，对于塑造方程解的行为具有决定性作用。例如，研究材料中的热传导，如果边界保持恒定温度，则解会趋于一个稳态分布；但如果边界是绝缘的，热量则会在内部重新分布。对于振动弦，固定端点会导致驻波，而自由端点则允许波在边界处反射。这表明，物理系统在边界处施加的具体约束，直接且深刻地决定了所得解的数学性质和物理特征。物理现实通过其施加的条件，将一般的数学形式转化为特定的、可观测的物理行为。
+                    </p>
+
+                    <h3>格林函数 (Green's Functions)</h3>
+
+                    <p>格林函数（Green's function）是数学物理和应用数学中的一个强大工具。它被定义为线性微分算子在给定初始条件或边界条件下的非齐次线性微分算子的脉冲响应 [49, 50]。</p>
+
+                    <p><b>定义与性质：</b></p>
+                    <p>格林函数 $G(x,s)$ 是线性微分算子 $L$ 作用于狄拉克 $\delta$ 函数（点源）的解，即 $LG(x,s) = \delta(x-s)$ [49,
+                        50]。这种定义方式意味着格林函数描述了系统对一个瞬时、局部扰动的响应。通过叠加原理，格林函数可以将非齐次微分方程 $Lu(x) = f(x)$ 的解转化为积分形式：$u(x) = \int
+                        G(x,s)f(s)ds$ [49]。这意味着，只要知道格林函数，就可以通过对源项 $f(s)$ 进行积分来得到任意源项下的解 [49]。</p>
+
+                    <p>格林函数具有一些重要的性质：</p>
+                    <ul>
+                        <li><b>对称性：</b> 对于许多物理系统，格林函数具有对称性，即 $G(x,y) = G(y,x)$ [48, 50]。这表示点源在 $y$ 处对 $x$ 处的响应与点源在 $x$
+                            处对 $y$ 处的响应是相同的。</li>
+                        <li><b>唯一性：</b> 并非所有算子都存在格林函数 [49]。如果齐次方程 $Lu=0$ 存在非平凡解，则可能存在多个格林函数，此时需要额外的条件（如边界条件）来确定唯一的格林函数
+                            [49, 50]。</li>
+                        <li><b>因果性：</b> 在处理时间相关问题时，格林函数可以分为“延迟格林函数”（retarded Green's function）和“超前格林函数”（advanced Green's
+                            function）。延迟格林函数只依赖于过去的源项，具有因果性，而超前格林函数依赖于未来的源项，不具有因果性 [49]。</li>
+                    </ul>
+
+                    <p><b>构造方法：</b></p>
+                    <p>格林函数的构造方法取决于具体的微分算子和边界条件：</p>
+                    <ul>
+                        <li><b>本征函数展开法 (Eigenfunction Expansion)：</b> 对于有界域，格林函数可以表示为拉普拉斯算子或其他线性算子本征函数的级数展开 [48,
+                            58]。这些本征函数满足边界条件并构成完备的正交基 [48]。</li>
+                        <li><b>镜像法 (Method of Images)：</b> 这种方法常用于在具有简单几何边界（如平面边界）的无界空间（如半空间）中构造格林函数 [48,
+                            58]。其基本思想是在物理区域外部引入“镜像源”，使得镜像源和真实源共同产生的势满足边界条件
+                            [48]。例如，对于半空间中的拉普拉斯方程，可以通过在边界另一侧放置一个符号相反的镜像电荷来构造满足Dirichlet边界条件的格林函数 [48]。</li>
+                        <li><b>傅里叶变换 (Fourier Transform)：</b> 对于无限空间中的齐次线性偏微分方程，傅里叶变换是一种强大的工具
+                            [59]。通过将微分方程在实空间中的形式转换为频域中的代数方程，可以很容易地求解格林函数在频域中的表示，然后通过逆傅里叶变换得到实空间中的格林函数 [59]。</li>
+                    </ul>
+
+                    <p><b>特定方程的格林函数示例：</b></p>
+                    <ul>
+                        <li><b>拉普拉斯方程的格林函数：</b>
+                            <ul>
+                                <li><b>二维自由空间：</b> 格林函数为 $G(x,y) = \frac{1}{2\pi} \ln(||x-y||)$ [48,
+                                    60]。其推导涉及将拉普拉斯方程在极坐标下转化为常微分方程，并利用狄拉克 $\delta$ 函数的性质和格林恒等式在弱形式下确定常数 [60]。</li>
+                                <li><b>三维自由空间：</b> 格林函数为 $G(x,y) = \frac{1}{4\pi ||x-y||}$ [48,
+                                    60]。这被称为牛顿核或牛顿势，描述了点电荷或点质量产生的势 [60, 61]。推导过程与二维类似，但在球坐标系下进行 [60]。</li>
+                                <li><b>半空间：</b> 可以通过镜像法构造 [48]。例如，对于Dirichlet边界条件，格林函数为 $G(x,y) = \Phi(x,y) -
+                                    \Phi(x,y^*)$，其中 $\Phi$ 是无界域的基本解，$y^*$ 是 $y$ 关于边界的镜像点 [48]。</li>
+                            </ul>
+                        </li>
+                        <li><b>波动方程的格林函数：</b>
+                            <ul>
+                                <li><b>一维自由空间：</b> 格林函数为 $G(x,t;y,s) = \frac{1}{2c} H(c(t-s) - |y-x|)$，其中 $H$
+                                    是Heaviside阶跃函数 [62, 63]。这表明波动只在因果锥内传播 [62]。推导可以利用d'Alembert解和Duhamel原理 [62]。</li>
+                            </ul>
+                        </li>
+                        <li><b>热方程的格林函数：</b>
+                            <ul>
+                                <li><b>一维自由空间：</b> 格林函数为 $G_0(x,t;\xi) = \frac{1}{\sqrt{2\pi t}} e^{-(x-\xi)^2/(4t)}$
+                                    [64]。这被称为热核或扩散核，描述了瞬时点热源在介质中的扩散 [64]。对于有界域，格林函数可以通过傅里叶级数展开得到 [65]。</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h3>本征值问题 (Eigenvalue Problems)</h3>
+
+                    <p>本征值问题是数学物理中的另一类重要边值问题。它们涉及寻找参数 $\lambda$ 的特定值（本征值）以及对应的非平凡解（本征函数），使得齐次方程 $Lu = \lambda \rho u$
+                        在满足齐次边界条件时成立 [30]。例如，对于振动弦或膜，本征值对应于系统的固有频率，本征函数对应于振动模式
+                        [30]。对于有界区域，本征值通常是可数的，且趋于无穷大，对应的本征函数构成一个完备的正交系 [30]。本征值问题在量子力学（如薛定谔方程的定态解）、结构力学和声学等领域具有广泛应用。</p>
+
+                    <h2>五、泛函方程理论 (Functional Equation Theory)</h2>
+
+                    <p>泛函方程在数学中是一个广泛的概念，在最广义的意义上，它是指一个或多个函数作为未知量出现的方程 [66]。因此，微分方程和积分方程都可以被视为泛函方程的特例
+                        [66]。然而，在更受限的意义上，泛函方程通常指那些关联同一个函数在不同输入值下的关系的方程 [66, 67]。例如，对数函数就由对数泛函方程 $f(xy) = f(x) + f(y)$
+                        所刻画 [66]。如果未知函数的定义域是自然数，那么泛函方程通常被称为递推关系或差分方程 [66]。</p>
+
+                    <p>泛函方程的基本性质包括线性性、齐次性和对称性 [67]。线性泛函方程可以写成 $a(x)f(x) + b(x) = 0$ 的形式
+                        [67]。泛函方程在解析数论中扮演着关键角色，为研究算术函数的性质提供了强大工具 [67]。许多重要的数论结果，如素数定理，都严重依赖于泛函方程的研究
+                        [67]。黎曼zeta函数和狄利克雷L函数就是数论中泛函方程的两个重要例子，它们在素数分布研究中具有重要应用 [66, 67]。</p>
+
+                    <p>泛函方程的解法多种多样，常见的包括：</p>
+                    <ul>
+                        <li><b>代换法 (Substitution)：</b> 通过巧妙的变量代换来简化方程或将其转化为已知形式 [66]。</li>
+                        <li><b>数学归纳法 (Mathematical Induction)：</b> 对于定义在整数域上的泛函方程（递推关系），归纳法是常用的证明工具 [66]。</li>
+                        <li><b>解析延拓 (Analytic Continuation)：</b> 在复分析中，解析延拓是求解泛函方程的强大技术，尤其是在L函数等领域 [67]。</li>
+                        <li><b>模形式 (Modular Forms)：</b> 模形式在L函数等背景下被用于求解泛函方程 [67]。</li>
+                    </ul>
+
+                    <p>以下是一些重要的泛函方程及其解：</p>
+                    <ul>
+                        <li><b>柯西泛函方程 (Cauchy's Functional Equation)：</b> 形式为 $f(x+y) = f(x) + f(y)$ [66, 68, 69]。
+                            <ul>
+                                <li><b>连续解：</b> 柯西在1821年证明，如果函数 $f$ 是连续的，那么唯一的解是线性函数 $f(x) = cx$，其中 $c$ 是常数 [68, 69, 70,
+                                    71]。实际上，仅需函数在单点连续、在某个区间上有界、单调或Lebesgue可测等较弱的正则性条件，即可保证解是线性的 [70, 71]。</li>
+                                <li><b>病态解：</b> 如果不施加任何正则性条件（并假设选择公理成立），则存在无限多个非连续的“病态”解，这些解的图像在 $R^2$ 中是稠密的 [66, 68,
+                                    69, 70]。这些非连续解通常被称为Hamel函数，它们的构造依赖于Hamel基 [69, 70]。</li>
+                            </ul>
+                        </li>
+                        <li><b>Jensen泛函方程 (Jensen's Functional Equation)：</b> 形式为 $f(\frac{x+y}{2}) =
+                            \frac{f(x)+f(y)}{2}$ 或在群上的推广形式 $f(xy) + f(xy^{-1}) = 2f(x)$ [66, 72,
+                            73]。在连续性条件下，其解通常是线性函数加上一个常数 [74]。对于群上的Jensen方程，其解与群的换位子子群结构相关 [72, 73]。</li>
+                        <li><b>d'Alembert泛函方程 (d'Alembert's Functional Equation)：</b> 形式为 $f(x+y) + f(x-y) = 2f(x)f(y)$
+                            [66, 75]。
+                            <ul>
+                                <li><b>连续解：</b> 如果函数是连续的，那么其解的形式为 $f(x) = \cos(kx)$ 或 $f(x) = \cosh(kx)$，以及平凡解 $f(x) =
+                                    0$ [75]。推导通常涉及假设函数是二次可微的，然后通过对变量求导并利用初始条件 $f(0)=1, f'(0)=0$ 将泛函方程转化为一个简单的二阶常微分方程
+                                    $f''(x) = f''(0)f(x)$ [75]。根据 $f''(0)$ 的正负，解可以是三角函数或双曲函数 [75]。</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h2>六、广义函数方程 (Generalized Function Equations)</h2>
+
+                    <p>广义函数，也称为分布（distributions），是数学中扩展经典函数概念的重要对象 [76,
+                        77]。它们允许将奇异点和不连续性纳入函数框架，从而能够更严谨地处理那些在经典意义下无法微分或积分的函数 [76, 77]。例如，狄拉克 $\delta$
+                        函数就是一个典型的广义函数，它在物理学中用于描述点电荷或瞬时冲击 [76, 77, 78]。</p>
+
+                    <p>广义函数理论的出现，源于偏微分方程理论的技术需求，特别是为了定义偏微分方程的弱解 [76, 77,
+                        78]。在许多实际问题中，物理系统可能包含点源、冲击或不连续性，导致其数学模型（微分方程）的解不具备足够的平滑性，无法在经典意义下进行微分 [76, 77,
+                        78]。广义函数理论提供了一个数学框架，使得这些不连续函数可以像平滑函数一样被处理 [76, 77]。</p>
+
+                    <p><b>基本性质与运算：</b></p>
+                    <p>广义函数被定义为测试函数空间上的连续线性泛函 [77]。测试函数是具有紧支集且无限可微的“好函数” [79]。这种定义方式使得广义函数可以进行线性组合和连续操作 [77]。</p>
+
+                    <p>广义函数的一个核心特性是其微分和积分的定义：</p>
+                    <ul>
+                        <li><b>微分：</b> 广义函数的微分是通过分部积分来定义的。对于一个广义函数 $f$ 和一个测试函数 $\phi$，其微分 $f'$ 定义为 $\langle f', \phi
+                            \rangle = -\langle f, \phi' \rangle$ [77, 78, 79]。这个定义将微分操作从广义函数本身转移到测试函数上，从而允许对非连续函数进行“微分”
+                            [79]。例如，Heaviside阶跃函数的广义导数就是狄拉克 $\delta$ 函数 [78, 79]。</li>
+                        <li><b>积分：</b> 广义函数的积分定义为 $\langle \int f dx, \phi \rangle = \langle f, \int \phi dx \rangle$
+                            [77]。</li>
+                    </ul>
+
+                    <p><b>与弱解理论的联系：</b></p>
+                    <p>广义函数在偏微分方程的弱解理论中扮演着至关重要的角色 [76, 77, 80, 81]。弱解（或称广义解）是指那些导数可能不存在，但仍然在某种精确定义下满足方程的函数 [80,
+                        81]。通过将微分方程乘以测试函数并在区域上积分，可以利用分部积分将解的导数“转移”到测试函数上，从而得到一个不含解的导数的“弱形式”方程 [81]。这种弱形式允许我们找到那些不一定可微的解
+                        [81]。许多用于建模真实世界现象的微分方程并不具备足够光滑的解，因此弱解理论是求解这些方程的唯一途径 [81]。即使方程存在可微解，通常也更方便先证明弱解的存在性，然后再证明这些弱解足够光滑
+                        [81]。</p>
+
+                    <p><b>应用领域：</b></p>
+                    <p>广义函数在多个领域有广泛应用：</p>
+                    <ul>
+                        <li><b>物理学和工程学：</b> 广泛用于建模具有奇异点和不连续性的物理系统，例如电荷分布、波的传播和点源问题 [76, 77]。格林函数（Green's
+                            function）本身就是广义函数理论的一个重要应用，它描述了系统对点源的响应 [77]。</li>
+                        <li><b>信号处理和滤波器理论：</b> 用于建模具有不连续性或奇异点的信号，并分析滤波器的性质 [77]。</li>
+                        <li><b>傅里叶变换：</b> 傅里叶变换对于紧支集广义函数是良好定义的 [76]。卷积定理也扩展到了广义函数，它表明两个函数的卷积的傅里叶变换等于它们傅里叶变换的乘积 [82, 83]。
+                        </li>
+                    </ul>
+
+                    <p><b>局限性：</b></p>
+                    <p>施瓦茨（Schwartz）分布理论的一个主要缺点是分布通常不能直接相乘 [76]。例如，狄拉克 $\delta$ 函数的平方在经典意义下是无意义的
+                        [76]。这对于非线性问题带来了严重限制。为了克服这一限制，已经提出了多种广义函数代数的构造，例如Colombeau代数，它允许对分布进行乘法运算 [76]。</p>
+
+                    <h2>七、方程理论的交叉领域与数值方法</h2>
+
+                    <p>方程理论在数学、物理、工程等多个学科中展现出深刻的交叉性。数学物理方程本身就是微分方程和积分方程在物理现象建模中的具体体现，例如麦克斯韦方程组、薛定谔方程和纳维-斯托克斯方程等都是核心的数学物理方程
+                        [1]。这些方程的求解往往需要综合运用不同方程理论的知识。</p>
+
+                    <h3>数值求解方法 (Numerical Solution Methods)</h3>
+
+                    <p>尽管许多方程在理论上存在精确解，但对于大多数复杂的非线性方程、具有复杂几何边界的问题或包含非恒定系数的方程，解析解往往难以获得 [2,
+                        84]。在这种情况下，数值方法成为连接理论与实际应用的桥梁，它们通过近似计算来获得方程的数值解。</p>
+
+                    <p><b>常微分方程数值解法：</b></p>
+                    <ul>
+                        <li><b>欧拉法 (Euler's Method)：</b> 最简单的数值方法之一，通过在每个时间步长内用函数在当前点的导数来近似函数的变化，从而逐步逼近解曲线
+                            [84]。其基本思想是将微分方程中的导数用差商近似，即 $dy/dx \approx (y_{n+1} - y_n)/\Delta x$ [84]。</li>
+                        <li><b>龙格-库塔法 (Runge-Kutta Methods)：</b>
+                            一族更精确的数值方法，通过在每个步长内计算函数在多个点上的斜率加权平均来提高近似精度，例如经典的四阶龙格-库塔法。</li>
+                    </ul>
+
+                    <p><b>偏微分方程数值解法：</b></p>
+                    <p>偏微分方程的数值解法通常涉及将连续的方程离散化为代数方程组。</p>
+                    <ul>
+                        <li><b>有限差分法 (Finite Difference Method - FDM)：</b> 通过用离散网格点上的函数值之差来近似偏导数，将PDE转化为代数方程组
+                            [84]。这种方法直观且易于实现，常用于规则几何区域。</li>
+                        <li><b>有限元法 (Finite Element Method - FEM)：</b> 一种强大的数值技术，用于求解微分方程的边值问题
+                            [85]。它将复杂区域分解为许多简单的子区域（有限元），并在每个元素上用分段多项式近似解，然后通过变分原理或加权残量法将PDE转化为代数方程组
+                            [85]。FEM特别适用于复杂几何和非均匀材料问题。</li>
+                        <li><b>谱方法 (Spectral Methods)：</b> 将方程的解表示为一组“基函数”（如傅里叶级数或切比雪夫多项式）的叠加，然后选择系数使方程得到最佳满足
+                            [85]。谱方法通常具有高精度，并常与快速傅里叶变换结合使用。</li>
+                        <li><b>边界元法 (Boundary Element Method - BEM)：</b> 专注于在问题域的边界上进行离散化，利用格林函数将域内问题转化为边界上的积分方程
+                            [86]。这可以减少计算维度，特别适用于无限域问题或只关注边界解的情况。</li>
+                        <li><b>多重网格法 (Multigrid Methods - MG)：</b> 一组用于求解微分方程的算法，通过在不同层次的离散化（粗细网格）之间进行信息传递来加速收敛
+                            [85]。它们是目前已知最快的求解技术之一，尤其适用于大规模问题。</li>
+                        <li><b>域分解法 (Domain Decomposition Methods)：</b> 将一个大的边值问题分解为在较小子域上的多个小问题，并通过迭代协调相邻子域之间的解
+                            [85]。这种方法非常适合并行计算。</li>
+                    </ul>
+
+                    <p><b>积分方程数值解法：</b></p>
+                    <ul>
+                        <li><b>梯形法则 (Trapezoidal Rule) 和 中点法则 (Midpoint Rule)：</b>
+                            这些是基本的数值积分方法，通过将积分区间划分为小段，并用梯形或矩形面积来近似函数曲线下的面积 [87, 88]。它们也可以用于积分方程的离散化。</li>
+                        <li><b>蒙特卡洛方法 (Monte Carlo Methods)：</b> 对于多维积分，蒙特卡洛方法是一种有效的随机采样技术
+                            [87]。它们通过随机抽取样本点来估计积分值，对于高维积分具有优势。</li>
+                    </ul>
+
+                    <h2>结论</h2>
+
+                    <p>方程理论作为数学的核心，是理解和描述自然界及抽象概念的通用语言。从古老的代数方程到现代的微分、积分、泛函和广义函数方程，每一类方程都承载着独特的数学结构和丰富的物理内涵。</p>
+
+                    <p>本报告系统阐述了各类方程的基本概念、分类、常用结果（如通解、特解、定解、格林函数）、公式、定理、恒等式及其求解方法。通过深入探讨，我们发现：</p>
+
+                    <ol>
+                        <li><b>方程的统一性：</b>
+                            不同的方程类型并非孤立存在，而是通过共同的数学结构和相互转化，形成了统一的理论体系。例如，微分方程可通过格林函数转化为积分方程，泛函方程则可涵盖微分和积分方程。这种统一性使得数学能够以共同的语言描述和分析跨越经典物理、量子力学、流体力学乃至数论等多种领域的现象。
+                        </li>
+                        <li><b>理论与实践的深刻互动：</b>
+                            方程理论的发展，常常源于对实际问题（如物理现象）的建模需求，而理论上的突破（如伽罗瓦理论揭示高次方程不可根式解）又反过来推动了数学概念的抽象化和新领域的诞生。皮卡-林德洛夫定理保证了常微分方程解的可预测性，直接关系到物理模型在实际应用中的可靠性；而边界条件的物理设定，则直接决定了数学解的物理行为。
+                        </li>
+                        <li><b>抽象化与可解性：</b>
+                            伽罗瓦理论通过群论的抽象概念，彻底解决了代数方程的可解性问题，将问题从具体的计算层面提升到对底层代数对称性的理解。弗雷德霍姆择一定理则在泛函分析的框架下，为各类线性方程的解的存在性和唯一性提供了统一的判别准则，强调了算子性质在确定可解性中的核心作用。
+                        </li>
+                        <li><b>广义函数的必要性：</b> 广义函数理论的出现，是为了解决经典函数理论在处理不连续和奇异现象时的局限性。它不仅为狄拉克 $\delta$
+                            函数等物理概念提供了严格的数学基础，也使得偏微分方程的弱解理论得以建立，从而能够处理更广泛的实际问题。</li>
+                        <li><b>数值方法的桥梁作用：</b>
+                            面对复杂方程难以获得解析解的挑战，数值方法成为连接理论与应用的不可或缺的工具。有限元、有限差分、谱方法等技术，使得我们能够通过近似计算来获得方程的数值解，从而在工程设计、科学模拟等领域实现精确预测和分析。
+                        </li>
+                    </ol>
+
+                    <p>综上所述，方程理论是一个充满活力、不断演进的领域。它不仅是纯粹数学研究的沃土，更是连接数学与物理世界、推动科学技术进步的强大引擎。对各类方程的深入理解和灵活运用，是现代科学和工程领域不可或缺的核心能力。
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function navigateTo(hash) {
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.getAttribute('href') === hash);
+                });
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', '#' + section.id === hash);
+                });
+
+                if (hash === '#differential-equations') {
+                    initializeOdeChart();
+                    setupDeTabs();
+                    showPdeInfo('hyperbolic');
+                } else if (hash === '#full-report') {
+                    // Ensure MathJax typesets the full report section
+                    MathJax.typesetPromise([document.getElementById('full-report')]);
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    window.location.hash = targetId;
+                });
+            });
+
+            window.addEventListener('hashchange', () => {
+                const hash = window.location.hash || '#introduction';
+                navigateTo(hash);
+            });
+
+            // Initial load
+            const initialHash = window.location.hash || '#introduction';
+            navigateTo(initialHash);
+        });
+
+        function setupDeTabs() {
+            const tabs = document.querySelectorAll('#de-tabs .tab-button');
+            const tabContents = document.querySelectorAll('#differential-equations .tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const targetId = this.getAttribute('data-target');
+                    tabContents.forEach(content => {
+                        content.classList.toggle('active', content.id === targetId);
+                    });
+                    // Re-typeset MathJax for the newly active tab content
+                    MathJax.typesetPromise([document.getElementById(targetId)]);
+                });
+            });
+        }
+
+        let odeChartInstance = null;
+        function initializeOdeChart() {
+            if (odeChartInstance) {
+                odeChartInstance.destroy();
+            }
+            const ctx = document.getElementById('odeChart').getContext('2d');
+            odeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'y(x)',
+                        data: [],
+                        borderColor: '#2c5282',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'x' }
+                        },
+                        y: {
+                            title: { display: true, text: 'y' }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '常系数线性ODE通解示例'
+                        }
+                    }
+                }
+            });
+            updateOdeChart('real');
+        }
+
+        function updateOdeChart(type) {
+            if (!odeChartInstance) return;
+
+            let data = [];
+            let labels = [];
+            let solutionForm = '';
+            const x = Array.from({ length: 101 }, (_, i) => i * 0.1);
+
+            switch (type) {
+                case 'real':
+                    // y = c1*e^(-x) + c2*e^(-2x). Let c1=1, c2=-0.5
+                    data = x.map(val => Math.exp(-val) - 0.5 * Math.exp(-2 * val));
+                    solutionForm = 'y(x) = c_1 e^{\\lambda_1 x} + c_2 e^{\\lambda_2 x}';
+                    odeChartInstance.options.plugins.title.text = '相异实根 (λ₁ ≠ λ₂) - 指数衰减';
+                    break;
+                case 'repeated':
+                    // y = (c1 + c2*x)e^(-x). Let c1=1, c2=1
+                    data = x.map(val => (1 + val) * Math.exp(-val));
+                    solutionForm = 'y(x) = (c_1 + c_2 x) e^{\\lambda x}';
+                    odeChartInstance.options.plugins.title.text = '重复实根 (λ₁ = λ₂) - 临界阻尼';
+                    break;
+                case 'complex':
+                    // y = e^(-ax) * (c1*cos(bx) + c2*sin(bx)). Let a=0.5, b=3, c1=1, c2=0.5
+                    data = x.map(val => Math.exp(-0.5 * val) * (Math.cos(3 * val) + 0.5 * Math.sin(3 * val)));
+                    solutionForm = 'y(x) = e^{\\alpha x} (c_1 \\cos(\\beta x) + c_2 \\sin(\\beta x))';
+                    odeChartInstance.options.plugins.title.text = '复共轭根 (α ± iβ) - 振荡衰减';
+                    break;
+            }
+
+            labels = x;
+            odeChartInstance.data.labels = labels;
+            odeChartInstance.data.datasets[0].data = data;
+            odeChartInstance.update();
+
+            const solutionDiv = document.getElementById('ode-solution-form');
+            solutionDiv.innerHTML = `通解形式: \\( ${solutionForm} \\)`;
+            MathJax.typesetPromise([solutionDiv]);
+        }
+
+        function showPdeInfo(type) {
+            const display = document.getElementById('pde-info-display');
+            const title = document.getElementById('pde-title');
+            const condition = document.getElementById('pde-condition');
+            const example = document.getElementById('pde-example');
+            const phenomenon = document.getElementById('pde-phenomenon');
+
+            display.className = 'mt-4 p-4 border-l-4 rounded-r-lg transition-all duration-300'; // Reset classes
+
+            switch (type) {
+                case 'hyperbolic':
+                    title.textContent = '双曲型 (Hyperbolic)';
+                    condition.innerHTML = '判别式: \\( B^2 - AC > 0 \\)';
+                    example.textContent = '典型方程: 波动方程';
+                    phenomenon.textContent = '物理现象: 描述具有特征速度的传播过程，如声波、光波。解的扰动会沿特征线传播。';
+                    display.classList.add('bg-red-50', 'border-red-500');
+                    break;
+                case 'parabolic':
+                    title.textContent = '抛物型 (Parabolic)';
+                    condition.innerHTML = '判别式: \\( B^2 - AC = 0 \\)';
+                    example.textContent = '典型方程: 热传导方程、扩散方程';
+                    phenomenon.textContent = '物理现象: 描述不可逆的耗散过程，如热量扩散。解会随着时间变得平滑。';
+                    display.classList.add('bg-yellow-50', 'border-yellow-500');
+                    break;
+                case 'elliptic':
+                    title.textContent = '椭圆型 (Elliptic)';
+                    condition.innerHTML = '判别式: \\( B^2 - AC < 0 \\)';
+                    example.textContent = '典型方程: 拉普拉斯方程、泊松方程';
+                    phenomenon.textContent = '物理现象: 描述平衡或稳态过程，如静电势、稳态温度分布。解在区域内部非常光滑。';
+                    display.classList.add('bg-indigo-50', 'border-indigo-500');
+                    break;
+            }
+            MathJax.typesetPromise([condition]);
+        }
+
+    </script>
+
+</body>
+
+</html>

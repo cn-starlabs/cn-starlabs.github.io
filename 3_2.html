@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复变函数交互式探索指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMeaOVTGsevSAPxdSpSDBOTGksZSpvC0iYJE9gFSzBdc72LDq" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A non-linear "Concept Explorer" SPA. The structure uses a fixed left-side navigation panel for quick topic selection and a dynamic main content area on the right. This design prioritizes user-driven exploration over a passive, linear reading experience. Key interactions include tabbed views for theorems (separating statement, proof, and application), toggleable content for complex derivations, and an interactive concept map to visualize the relationships between different theories. This structure was chosen to make the dense, interconnected information of complex analysis more digestible and engaging for learners and researchers, allowing them to either get a high-level overview or dive deep into specific areas of interest. -->
+    <!-- Visualization & Content Choices: 
+        - Core Theorems (Cauchy, Residue): Presented in a tabbed interface (HTML/JS) to separate the formal statement, the proof, and applications. Goal: Organize & Inform. Interaction: Clicking tabs. This breaks down dense topics into manageable parts.
+        - Singularity Types: Displayed as interactive cards (HTML/CSS/JS). Goal: Compare. Interaction: Hover/click to reveal details. This provides a quick, visual comparison.
+        - Saddle Point Method: Explained via a step-by-step interactive diagram (HTML/CSS/JS). Goal: Explain Process. Interaction: Clicking steps to expand. This clarifies a complex workflow.
+        - Concept Relationships: An interactive concept map (HTML/CSS/JS) where nodes are theorems and edges show dependencies. Goal: Show Relationships. Interaction: Hover/click nodes. This provides a "wow factor" and a powerful overview of the subject's structure.
+        - Mathematical Formulas: Rendered using KaTeX library for clarity and professionalism. Goal: Inform.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: #fdfcfb;
+            color: #333;
+        }
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5em 0;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+        .nav-link2 {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active {
+            background-color: #e7e5e4;
+            border-left-color: #a16207;
+            color: #a16207;
+            font-weight: 600;
+        }
+        .nav-link:hover {
+            background-color: #f5f5f4;
+            border-left-color: #ca8a04;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-button.active {
+            border-bottom-color: #a16207;
+            color: #a16207;
+            font-weight: 600;
+        }
+        .proof-toggle {
+            cursor: pointer;
+            background-color: #f5f5f4;
+            border: 1px solid #e7e5e4;
+        }
+        .proof-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .concept-map-node {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .concept-map-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            z-index: 10;
+        }
+        .concept-map-line {
+            position: absolute;
+            background-color: #d6d3d1;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-64 lg:w-72 bg-stone-100 border-r border-stone-200 p-4 md:fixed md:h-full overflow-y-auto">
+            <h1 class="text-xl font-bold text-yellow-800 mb-6">复变函数探索指南</h1>
+            <nav id="main-nav">
+                <ul>
+                    <li><a href="#introduction" class="nav-link block p-2 my-1 rounded-r-md">I. 引言</a></li>
+                    <li><a href="#basics" class="nav-link block p-2 my-1 rounded-r-md">II. 基础概念</a></li>
+                    <li><a href="#core-theorems" class="nav-link block p-2 my-1 rounded-r-md">III. 核心定理</a></li>
+                    <li><a href="#laurent-series" class="nav-link block p-2 my-1 rounded-r-md">IV. 洛朗级数与奇点</a></li>
+                    <li><a href="#residue-theorem" class="nav-link block p-2 my-1 rounded-r-md">V. 留数定理与应用</a></li>
+                    <li><a href="#saddle-point" class="nav-link block p-2 my-1 rounded-r-md">VI. 鞍点法</a></li>
+                    <li><a href="#other-methods" class="nav-link block p-2 my-1 rounded-r-md">VII. 其他计算方法</a></li>
+                    <li><a href="#concept-map" class="nav-link block p-2 my-1 rounded-r-md">VIII. 概念关系图</a></li>
+                    <li><a href="index.html" class="nav-link2 block w-full text-left px-4 py-2 rounded-lg font-medium">矢量分析与张量分析</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 md:ml-64 lg:ml-72 p-6 md:p-10">
+            <div id="content-container">
+                <!-- Section: Introduction -->
+                <section id="introduction" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">I. 引言</h2>
+                    <div class="space-y-4 text-lg leading-relaxed">
+                        <p>欢迎来到复变函数交互式探索指南。本应用旨在将复杂的复变函数理论转化为一个直观、易于导航的学习工具。复变函数论不仅是纯粹数学的优美分支，更在物理、工程等众多领域扮演着不可或缺的角色。它将一维的实数轴扩展至二维复平面，为函数赋予了深刻的几何与代数结构。</p>
+                        <p>在这里，您可以通过左侧导航栏自由探索核心概念，从柯西-黎曼方程到强大的留数定理，再到高级的鞍点法。每个主题都经过精心组织，通过交互式元素（如选项卡、可展开的证明、应用案例）来呈现，帮助您建立清晰的知识框架。最后的“概念关系图”更是将所有理论串联起来，直观地展示它们之间的逻辑依赖关系。希望这次探索之旅能让您领略到复变函数论的魅力与力量。</p>
+                    </div>
+                </section>
+
+                <!-- Section: Basics -->
+                <section id="basics" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">II. 基础概念</h2>
+                    <p class="mb-6 text-lg">复变函数论建立在复数、复平面以及复可微性（全纯性）等基本概念之上。理解这些基础是掌握后续高级理论的关键。本节将介绍柯西-黎曼方程，它是判断一个函数是否为全纯函数的核心工具。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">柯西-黎曼方程</h3>
+                        <p class="mb-4">一个复函数 $f(z) = u(x, y) + iv(x, y)$ 在一点 $z_0$ 处复可微的必要条件是，其实部 $u$ 和虚部 $v$ 的偏导数满足柯西-黎曼方程。如果偏导数还连续，那么该条件也是充分的。</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4">
+                            <div class="text-xl">$\frac{\partial u}{\partial x} = \frac{\partial v}{\partial y} \quad \text{且} \quad \frac{\partial u}{\partial y} = -\frac{\partial v}{\partial x}$</div>
+                        </div>
+                        <div class="mt-6">
+                            <div class="proof-toggle p-3 rounded-md font-semibold text-yellow-800 hover:bg-yellow-100" onclick="toggleProof('cr-proof')">
+                                <span>▶</span> 点击展开/折叠严谨推导
+                            </div>
+                            <div id="cr-proof" class="proof-content border-l-4 border-yellow-700 pl-4 mt-2">
+                                <p class="mt-4 font-semibold">推导思路：</p>
+                                <p>复导数的定义是 $f'(z_0) = \lim_{\Delta z \to 0} \frac{f(z_0 + \Delta z) - f(z_0)}{\Delta z}$。由于极限必须沿任何路径都存在且唯一，我们选择两条特殊的路径（沿实轴和沿虚轴）来计算极限，并令结果相等。</p>
+                                <p class="mt-2 font-semibold">1. 沿实轴趋近 ($\Delta z = \Delta x$):</p>
+                                <div class="text-lg"> $f'(z_0) = \frac{\partial u}{\partial x} + i \frac{\partial v}{\partial x}$ </div>
+                                <p class="mt-2 font-semibold">2. 沿虚轴趋近 ($\Delta z = i\Delta y$):</p>
+                                <div class="text-lg"> $f'(z_0) = \frac{\partial v}{\partial y} - i \frac{\partial u}{\partial y}$ </div>
+                                <p class="mt-2 font-semibold">令两式相等，比较实部和虚部，即可得到柯西-黎曼方程。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Core Theorems -->
+                <section id="core-theorems" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">III. 核心定理</h2>
+                    <p class="mb-6 text-lg">柯西积分定理与柯西积分公式是复分析的基石。它们揭示了全纯函数惊人的“刚性”：函数在边界上的值完全决定了其内部所有点的值及其任意阶导数的值。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="border-b border-stone-200 mb-4">
+                            <nav class="flex space-x-4" aria-label="Tabs">
+                                <button class="tab-button py-2 px-4 border-b-2 border-transparent" data-target="cauchy-integral-theorem">柯西积分定理</button>
+                                <button class="tab-button py-2 px-4 border-b-2 border-transparent" data-target="cauchy-integral-formula">柯西积分公式</button>
+                            </nav>
+                        </div>
+                        <div id="cauchy-integral-theorem" class="tab-content">
+                            <h3 class="text-2xl font-semibold mb-2 text-yellow-900">柯西积分定理</h3>
+                            <p class="mb-4">若函数 $f(z)$ 在单连通区域 $D$ 内全纯，则对于 $D$ 内任意一条简单闭曲线 $\gamma$，有：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 0$ </div>
+                            <p>这个定理意味着在单连通区域内，全纯函数的积分与路径无关，只取决于起点和终点。</p>
+                        </div>
+                        <div id="cauchy-integral-formula" class="tab-content hidden">
+                            <h3 class="text-2xl font-semibold mb-2 text-yellow-900">柯西积分公式</h3>
+                            <p class="mb-4">若 $f(z)$ 在区域 $D$ 内全纯，$\gamma$ 是 $D$ 内一条包围点 $a$ 的简单闭曲线，则：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $f(a) = \frac{1}{2\pi i} \oint_{\gamma} \frac{f(z)}{z-a} dz$ </div>
+                            <p class="font-semibold mt-4">高阶导数公式：</p>
+                            <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $f^{(n)}(a) = \frac{n!}{2\pi i} \oint_{\gamma} \frac{f(z)}{(z-a)^{n+1}} dz$ </div>
+                            <p>此公式是复分析最强大的结果之一，它表明全纯函数必然是无限次可微的。</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Section: Laurent Series -->
+                <section id="laurent-series" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">IV. 洛朗级数与奇点分类</h2>
+                    <p class="mb-6 text-lg">洛朗级数是泰勒级数的推广，它允许我们分析函数在奇点附近的行为。通过观察洛朗级数中负幂项的特征，我们可以对孤立奇点进行精确分类。</p>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">可去奇点</h3>
+                            <p>洛朗级数中不含负幂项 ($a_n=0$ for $n<0$)。函数在奇点处的极限存在，可以通过补充定义使函数在该点全纯。</p>
+                            <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $\frac{\sin z}{z} = 1 - \frac{z^2}{3!} + \dots$</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">极点</h3>
+                            <p>洛朗级数中含有有限个负幂项。若最低次幂为 $-m$，则称为 $m$ 阶极点。函数在极点处趋于无穷。</p>
+                             <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $\frac{e^z}{(z-1)^2}$ 在 $z=1$ 有2阶极点。</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">本质奇点</h3>
+                            <p>洛朗级数中含有无限个负幂项。函数在本质奇点附近的行为极其复杂，会取遍几乎所有复数值。</p>
+                            <p class="mt-4 font-mono text-sm bg-stone-100 p-2 rounded">例: $e^{1/z} = 1 + \frac{1}{z} + \frac{1}{2!z^2} + \dots$</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Residue Theorem -->
+                <section id="residue-theorem" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">V. 留数定理与应用</h2>
+                    <p class="mb-6 text-lg">留数定理是计算围道积分的终极武器，它将复杂的积分问题简化为计算被积函数在奇点处的“留数”之和。留数即洛朗级数中 $(z-z_0)^{-1}$ 项的系数 $a_{-1}$。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">留数定理</h3>
+                        <p class="mb-4">若函数 $f(z)$ 在简单闭曲线 $\gamma$ 内部及边界上除有限个孤立奇点 $a_1, \dots, a_n$ 外全纯，则：</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-xl"> $\oint_{\gamma} f(z) dz = 2\pi i \sum_{k=1}^{n} \operatorname{Res}(f, a_k)$ </div>
+                        
+                        <div class="mt-6">
+                            <h4 class="text-xl font-semibold mb-2 text-yellow-900">应用：计算实积分</h4>
+                            <p>留数定理最令人惊叹的应用之一是计算难以处理的实积分。基本思想是将实积分问题转化为复平面上的围道积分。</p>
+                            <div class="bg-stone-50 p-4 mt-4 rounded-lg">
+                                <p class="font-semibold">示例：计算 $\int_{-\infty}^{\infty} \frac{1}{x^2+1} dx$</p>
+                                <ol class="list-decimal list-inside mt-2 space-y-2">
+                                    <li>构造复函数 $f(z) = \frac{1}{z^2+1}$ 和上半平面的半圆围道。</li>
+                                    <li>$f(z)$ 在上半平面的唯一奇点是 $z=i$ (简单极点)。</li>
+                                    <li>计算留数: $\operatorname{Res}(f, i) = \lim_{z \to i} (z-i)\frac{1}{(z-i)(z+i)} = \frac{1}{2i}$。</li>
+                                    <li>应用留数定理: $\oint f(z)dz = 2\pi i \cdot \frac{1}{2i} = \pi$。</li>
+                                    <li>证明半圆弧上的积分为0，故原积分为 $\pi$。</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Saddle Point -->
+                <section id="saddle-point" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VI. 鞍点法（最速下降法）</h2>
+                    <p class="mb-6 text-lg">鞍点法是用于近似估计形如 $I(\lambda) = \int_C f(z)e^{\lambda g(z)} dz$ 且 $\lambda \to \infty$ 的积分的强大渐近分析技术。其核心思想是，积分的主要贡献来自于 $g(z)$ 的鞍点（即 $g'(z_0)=0$ 的点）附近。</p>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4 text-yellow-900">核心步骤</h3>
+                        <div class="relative flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+                            <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">①</div>
+                                <h4 class="font-semibold">寻找鞍点</h4>
+                                <p class="text-sm">求解 $g'(z)=0$ 找到鞍点 $z_0$。</p>
+                            </div>
+                            <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                             <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">②</div>
+                                <h4 class="font-semibold">路径形变</h4>
+                                <p class="text-sm">将积分路径 $C$ 变形为通过 $z_0$ 的最速下降路径。</p>
+                            </div>
+                            <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                             <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">③</div>
+                                <h4 class="font-semibold">局部近似</h4>
+                                <p class="text-sm">在 $z_0$ 附近对 $g(z)$ 做二次近似，将积分化为高斯积分。</p>
+                            </div>
+                             <div class="hidden md:block text-stone-400 text-2xl font-bold">→</div>
+                             <div class="w-full md:w-1/4 p-4 bg-stone-100 rounded-lg text-center">
+                                <div class="text-2xl mb-2">④</div>
+                                <h4 class="font-semibold">计算积分</h4>
+                                <p class="text-sm">得到积分的渐近表达式。</p>
+                            </div>
+                        </div>
+                        <p class="mt-6">对于非退化鞍点，积分的渐近主项为：</p>
+                        <div class="bg-stone-50 p-4 rounded-md text-center my-4 text-lg">
+                        $I(\lambda) \approx \sqrt{\frac{2\pi}{-\lambda g''(z_0)}} f(z_0) e^{\lambda g(z_0)}$
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Other Methods -->
+                <section id="other-methods" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VII. 其他常用计算方法</h2>
+                     <p class="mb-6 text-lg">除了上述核心理论，复分析还提供了多种强大的工具，用于解决特定类型的问题，如计数零点、求解边界值问题和分析线性系统。</p>
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">幅角原理与鲁歇定理</h3>
+                            <p>这两个定理是计算区域内函数零点和极点数目的利器。幅角原理将零点和极点数目与函数沿边界的辐角变化联系起来，而鲁歇定理则通过比较两个函数的大小来判断它们是否有相同数量的零点，常用于代数方程求根。</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">共形映射</h3>
+                            <p>共形映射是一种保持角度不变的复变函数变换。它能够将复杂形状的区域映射为简单的区域（如单位圆或上半平面），从而极大地简化了流体力学、静电学和热传导等领域的偏微分方程边界值问题的求解。</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold text-yellow-900 mb-2">傅里叶变换与拉普拉斯变换</h3>
+                            <p>这两种积分变换是信号处理和控制理论的基石。它们将时域中的函数（或信号）转换到频域或复频域，使得微分方程变为代数方程，从而简化分析。留数定理在计算它们的逆变换时起着至关重要的作用。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Concept Map -->
+                <section id="concept-map" class="content-section">
+                    <h2 class="text-3xl font-bold text-yellow-800 border-b-2 border-yellow-700 pb-2 mb-6">VIII. 概念关系图</h2>
+                    <p class="mb-6 text-lg">复变函数论的各个概念和定理并非孤立存在，而是紧密相连、层层递进的。下图通过可视化的方式展示了它们之间的逻辑依赖关系。您可以点击节点以跳转到相应章节进行深入学习。</p>
+                    <div id="map-container" class="relative w-full h-[600px] bg-white rounded-lg shadow-inner border border-stone-200 overflow-auto">
+                        <!-- Nodes will be injected by JS -->
+                        <!-- Lines will be injected by JS -->
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const mapContainer = document.getElementById('map-container');
+
+            function showSection(hash) {
+                const targetHash = hash || '#introduction';
+                
+                contentSections.forEach(section => {
+                    if ('#' + section.id === targetHash) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === targetHash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+
+                window.scrollTo(0, 0);
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetHash = this.getAttribute('href');
+                    history.pushState(null, null, targetHash);
+                    showSection(targetHash);
+                });
+            });
+            
+            window.addEventListener('popstate', () => {
+                showSection(window.location.hash);
+            });
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.dataset.target;
+                    const parent = this.closest('.bg-white');
+                    
+                    parent.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+
+                    parent.querySelectorAll('.tab-content').forEach(content => {
+                        if (content.id === targetId) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // Set initial active tab
+            document.querySelectorAll('.bg-white').forEach(container => {
+                const firstTab = container.querySelector('.tab-button');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            });
+            
+            // Initial load
+            showSection(window.location.hash);
+
+            // KaTeX rendering
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false},
+                    {left: "\\(", right: "\\)", display: false},
+                    {left: "\\[", right: "\\]", display: true}
+                ]
+            });
+
+            // Concept Map Logic
+            const nodes = {
+                basics: { text: "基础概念 (全纯性, C-R方程)", x: 50, y: 5, target: '#basics' },
+                cauchy_theorem: { text: "柯西积分定理", x: 30, y: 25, target: '#core-theorems' },
+                cauchy_formula: { text: "柯西积分公式", x: 70, y: 25, target: '#core-theorems' },
+                laurent: { text: "洛朗级数 & 奇点", x: 50, y: 45, target: '#laurent-series' },
+                residue: { text: "留数定理", x: 50, y: 65, target: '#residue-theorem' },
+                saddle: { text: "鞍点法", x: 15, y: 65, target: '#saddle-point' },
+                apps: { text: "应用 (实积分等)", x: 50, y: 85, target: '#residue-theorem' },
+                other: { text: "其他方法 (幅角, 变换)", x: 85, y: 65, target: '#other-methods' },
+            };
+
+            const connections = [
+                ['basics', 'cauchy_theorem'],
+                ['basics', 'cauchy_formula'],
+                ['cauchy_theorem', 'cauchy_formula'],
+                ['cauchy_formula', 'laurent'],
+                ['laurent', 'residue'],
+                ['cauchy_theorem', 'residue'],
+                ['residue', 'apps'],
+                ['cauchy_theorem', 'saddle'],
+                ['cauchy_formula', 'other']
+            ];
+
+            function createLine(x1, y1, x2, y2) {
+                const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+                const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                const transform = `rotate(${angle}deg)`;
+                
+                const line = document.createElement('div');
+                line.className = 'concept-map-line';
+                line.style.width = `${length}px`;
+                line.style.height = '2px';
+                line.style.left = `${x1}px`;
+                line.style.top = `${y1}px`;
+                line.style.transformOrigin = '0 0';
+                line.style.transform = transform;
+                return line;
+            }
+
+            if (mapContainer) {
+                const mapWidth = mapContainer.clientWidth;
+                const mapHeight = mapContainer.clientHeight;
+
+                Object.values(nodes).forEach(node => {
+                    const nodeEl = document.createElement('div');
+                    nodeEl.className = 'concept-map-node absolute p-2 md:p-3 bg-yellow-700 text-white text-xs md:text-sm font-semibold rounded-lg shadow-lg text-center';
+                    nodeEl.textContent = node.text;
+                    nodeEl.style.left = `calc(${node.x}% - 50px)`;
+                    nodeEl.style.top = `calc(${node.y}% - 20px)`;
+                    nodeEl.style.width = '100px';
+                    nodeEl.addEventListener('click', () => {
+                        history.pushState(null, null, node.target);
+                        showSection(node.target);
+                    });
+                    mapContainer.appendChild(nodeEl);
+                    node.el = nodeEl;
+                });
+
+                connections.forEach(([from, to]) => {
+                    const fromNode = nodes[from];
+                    const toNode = nodes[to];
+                    
+                    const x1 = (fromNode.x / 100) * mapWidth;
+                    const y1 = (fromNode.y / 100) * mapHeight;
+                    const x2 = (toNode.x / 100) * mapWidth;
+                    const y2 = (toNode.y / 100) * mapHeight;
+                    
+                    const lineEl = createLine(x1, y1, x2, y2);
+                    mapContainer.appendChild(lineEl);
+                });
+            }
+        });
+
+        function toggleProof(id) {
+            const content = document.getElementById(id);
+            const toggle = content.previousElementSibling;
+            const icon = toggle.querySelector('span');
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+    </script>
+</body>
+</html>
