@@ -1,273 +1,206 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的个人主页</title>
-    <!-- 引入 Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 设置全局字体为 Inter，如果系统不支持则回退到无衬线字体 */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            /* 浅灰色背景 */
-            color: #333;
-            /* 深灰色文字 */
-            line-height: 1.6;
-        }
-
-        /* 自定义链接颜色 */
-        a {
-            color: #2563eb;
-            /* 蓝色链接 */
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* 侧边栏链接的激活状态样式 */
-        .sidebar-link.active {
-            background-color: #e0e7ff;
-            /* 浅蓝色背景 */
-            color: #1e40af;
-            /* 深蓝色文字 */
-            font-weight: bold;
-        }
-
-        /* 默认隐藏所有内容区域，通过JS控制显示 */
-        .content-section {
-            display: none;
-        }
-
-        /* 激活状态显示内容区域 */
-        .content-section.active {
-            display: block;
-        }
-    </style>
+    <title data-lang="company_name">山东智慧互联科技有限公司</title>
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
+<body data-bs-spy="scroll" data-bs-target="#navbarResponsive" data-bs-offset="56">
 
-<body class="flex flex-col md:flex-row min-h-screen">
-    <!-- 左侧侧边栏 -->
-    <aside
-        class="w-full md:w-64 bg-gray-800 text-white p-6 md:p-8 shadow-lg flex-shrink-0 md:sticky md:top-0 md:h-screen">
-        <div class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-blue-300">导航</h1>
-        </div>
-        <nav>
-            <ul class="space-y-4">
-                <li>
-                    <a href="#introduction"
-                        class="sidebar-link block p-3 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
-                        <span class="text-xl">🏠</span> 简介
-                    </a>
-                </li>
-                <li>
-                    <!-- 个人简介链接直接跳转ORCID，不显示内部内容 -->
-                    <a href="https://orcid.org/0009-0007-2600-0948" target="_blank" rel="noopener noreferrer"
-                        class="sidebar-link block p-3 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
-                        <span class="text-xl">👤</span> 个人简介
-                    </a>
-                </li>
-                <li>
-                    <a href="#math-physics"
-                        class="sidebar-link block p-3 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
-                        <span class="text-xl">🔬</span> 数学与物理百科目录
-                    </a>
-                </li>
-                <li>
-                    <a href="#computer-projects"
-                        class="sidebar-link block p-3 rounded-lg hover:bg-gray-700 transition duration-300 ease-in-out">
-                        <span class="text-xl">💻</span> 计算机项目目录
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </aside>
-
-    <!-- 主内容区域 -->
-    <main class="flex-grow p-4 sm:p-8 md:p-12 lg:p-16">
-        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-10 lg:p-12">
-            <!-- 头部标题 -->
-            <header class="text-center mb-10">
-                <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-2">欢迎来到我的主页</h1>
-                <p class="text-lg text-gray-600">个人简介、学习与项目展示</p>
-            </header>
-
-            <!-- 简介部分 -->
-            <section id="introduction" class="content-section mb-10 p-6 bg-gray-50 rounded-lg shadow-md">
-                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">简介</h2>
-                <p class="text-gray-700">
-                    这是一个展示我个人信息、学术兴趣以及计算机项目成果的静态主页。
-                    您可以通过左侧的导航栏快速切换查看不同内容板块。
-                </p>
-            </section>
-
-            <!-- 数学与物理百科目录 -->
-            <section id="math-physics" class="content-section mb-10 p-6 bg-green-50 rounded-lg shadow-md">
-                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 border-b-2 border-green-300 pb-2">数学与物理百科目录
-                </h2>
-                <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">交互式矢量与张量分析参考手册：</span>
-                            <a href="1.html"
-                                class="hover:text-green-700 transition duration-300 ease-in-out" target="_blank"
-                                rel="noopener noreferrer">点击查看交互式矢量与张量分析参考手册</a>
-                            <!-- 注意：此处链接 'files/calculus_basics.pdf' 是一个示例文件路径。
-                                 在实际部署时，您需要确保该文件存在于您的网站服务器的正确位置。
-                                 如果文件不存在，点击后会显示“文件未找到”错误。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">交互式热力学关系浏览器：</span>
-                            <a href="2.html"
-                                class="hover:text-green-700 transition duration-300 ease-in-out" target="_blank"
-                                rel="noopener noreferrer">点击查看交互式热力学关系浏览器</a>
-                            <!-- 这是一个跳转到另一个HTML页面的示例，请确保 quantum_mechanics_intro.html 文件存在。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">复变函数交互式探索指南：</span>
-                            <a href="3.html"
-                                class="hover:text-green-700 transition duration-300 ease-in-out" target="_blank"
-                                rel="noopener noreferrer">点击查看复变函数交互式探索指南</a>
-                            <!-- 同样，这是一个示例文件路径，请根据您的实际文件位置进行调整。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">旋量与旋量代数交互式指南：</span>
-                            <a href="4.html"
-                                class="hover:text-green-700 transition duration-300 ease-in-out" target="_blank"
-                                rel="noopener noreferrer">点击查看旋量与旋量代数交互式指南</a>
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">交互式方程理论知识库：</span>
-                            <a href="5.html"
-                                class="hover:text-green-700 transition duration-300 ease-in-out" target="_blank"
-                                rel="noopener noreferrer">点击查看交互式方程理论知识库</a>
-                        </p>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm" id="navbarResponsive">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#page-top" data-lang="company_name"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#home" data-lang="nav_home"></a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about" data-lang="nav_about"></a></li>
+                    <li class="nav-item"><a class="nav-link" href="#services" data-lang="nav_services"></a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact" data-lang="nav_contact"></a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">语言</a>
+                        <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="#" id="lang-zh">中文</a></li>
+                            <li><a class="dropdown-item" href="#" id="lang-en">English</a></li>
+                        </ul>
                     </li>
                 </ul>
-            </section>
-
-            <!-- 计算机项目目录 -->
-            <section id="computer-projects" class="content-section p-6 bg-purple-50 rounded-lg shadow-md">
-                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 border-b-2 border-purple-300 pb-2">计算机项目目录
-                </h2>
-                <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">Web开发项目：</span>
-                            <a href="https://github.com/yourusername/web-project-repo" target="_blank"
-                                rel="noopener noreferrer"
-                                class="hover:text-purple-700 transition duration-300 ease-in-out">访问Web项目GitHub仓库</a>
-                            <!-- 此处链接是一个示例URL，请替换为您的实际项目URL。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">数据分析工具：</span>
-                            <a href="https://yourwebsite.com/data-analysis-tool" target="_blank"
-                                rel="noopener noreferrer"
-                                class="hover:text-purple-700 transition duration-300 ease-in-out">了解数据分析工具详情</a>
-                            <!-- 此处链接是一个示例URL，请替换为您的实际项目URL。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">机器学习模型：</span>
-                            <a href="https://huggingface.co/yourmodel" target="_blank" rel="noopener noreferrer"
-                                class="hover:text-purple-700 transition duration-300 ease-in-out">查看机器学习模型演示</a>
-                            <!-- 此处链接是一个示例URL，请替换为您的实际项目URL。 -->
-                        </p>
-                    </li>
-                    <li>
-                        <p class="inline">
-                            <span class="font-semibold">移动应用开发：</span>
-                            <a href="https://play.google.com/store/apps/details?id=your.app.id" target="_blank"
-                                rel="noopener noreferrer"
-                                class="hover:text-purple-700 transition duration-300 ease-in-out">下载移动应用</a>
-                    </li>
-                </ul>
-            </section>
-
-            <!-- 页脚 -->
-            <footer class="text-center mt-10 text-gray-500 text-sm">
-                <p>&copy; 2025 杨鑫宇. 保留所有权利。</p>
-            </footer>
+            </div>
         </div>
-    </main>
+    </nav>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const navLinks = document.querySelectorAll('aside nav ul li a');
-            const contentSections = document.querySelectorAll('.content-section');
+    <!-- Hero Section -->
+    <header id="home" class="hero-section text-center text-white d-flex align-items-center justify-content-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold" data-lang="hero_title"></h1>
+            <p class="lead my-3 col-lg-8 mx-auto" data-lang="hero_subtitle"></p>
+            <a href="#contact" class="btn btn-primary btn-lg" data-lang="hero_cta"></a>
+        </div>
+    </header>
 
-            // Function to show the correct content section and update active link
-            function showSection(hash) {
-                // Default to #introduction if no hash or invalid hash
-                let targetId = hash ? hash.substring(1) : 'introduction';
+    <!-- About Us Section -->
+    <section id="about" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-heading" data-lang="about_title"></h2>
+                    <hr class="divider">
+                    <p class="text-muted fs-5" data-lang="about_content"></p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-                let sectionFound = false;
-                contentSections.forEach(section => {
-                    if (section.id === targetId) {
-                        section.classList.add('active');
-                        sectionFound = true;
-                    } else {
-                        section.classList.remove('active');
-                    }
-                });
+    <!-- Services Section -->
+    <section id="services" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading" data-lang="services_title"></h2>
+                <hr class="divider">
+            </div>
+            <!-- Services will be dynamically injected here -->
+            <div id="services-container"></div>
+        </div>
+    </section>
 
-                // If no valid section found for the hash, default to introduction
-                if (!sectionFound && targetId !== 'introduction') {
-                    document.getElementById('introduction').classList.add('active');
-                    targetId = 'introduction'; // Update targetId for active link below
-                }
+    <!-- Why Choose Us Section -->
+    <section id="why-us" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading" data-lang="why_choose_us_title"></h2>
+                <hr class="divider">
+            </div>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 text-center mb-4">
+                    <div class="card border-0 h-100 p-4">
+                        <i class="bi bi-speedometer2 d-block mb-3"></i>
+                        <h4 class="card-title" data-lang="feature_1_title"></h4>
+                        <p class="card-text text-muted" data-lang="feature_1_desc"></p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 text-center mb-4">
+                    <div class="card border-0 h-100 p-4">
+                        <i class="bi bi-eye d-block mb-3"></i>
+                        <h4 class="card-title" data-lang="feature_2_title"></h4>
+                        <p class="card-text text-muted" data-lang="feature_2_desc"></p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 text-center mb-4">
+                    <div class="card border-0 h-100 p-4">
+                        <i class="bi bi-people d-block mb-3"></i>
+                        <h4 class="card-title" data-lang="feature_3_title"></h4>
+                        <p class="card-text text-muted" data-lang="feature_3_desc"></p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 text-center mb-4">
+                    <div class="card border-0 h-100 p-4">
+                        <i class="bi bi-shield-check d-block mb-3"></i>
+                        <h4 class="card-title" data-lang="feature_4_title"></h4>
+                        <p class="card-text text-muted" data-lang="feature_4_desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
+    <!-- Partners Section -->
+    <section id="partners" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading" data-lang="partners_title"></h2>
+                <p class="text-muted" data-lang="partners_subtitle"></p>
+                <hr class="divider">
+            </div>
+            <div class="row align-items-center">
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=DELL" class="partner-logo" alt="Partner Logo"></div>
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=CISCO" class="partner-logo" alt="Partner Logo"></div>
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=HUAWEI" class="partner-logo" alt="Partner Logo"></div>
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=PROXMOX" class="partner-logo" alt="Partner Logo"></div>
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=ZABBIX" class="partner-logo" alt="Partner Logo"></div>
+                <div class="col-md-2 col-sm-4 col-6 mb-4 text-center"><img src="https://via.placeholder.com/150x60.png?text=WIREGUARD" class="partner-logo" alt="Partner Logo"></div>
+            </div>
+        </div>
+    </section>
 
-                navLinks.forEach(link => {
-                    // Check if the link's href matches the current hash or default section
-                    // Also ensure it's not the ORCID direct link
-                    if (link.getAttribute('href').startsWith('#')) {
-                        link.classList.toggle('active', link.getAttribute('href').substring(1) === targetId);
-                    } else {
-                        // For external links like ORCID, ensure they are not marked active for internal navigation
-                        link.classList.remove('active');
-                    }
-                });
-            }
+    <!-- Contact Section -->
+    <section id="contact" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading" data-lang="contact_title"></h2>
+                <p class="text-muted" data-lang="contact_subtitle"></p>
+                <hr class="divider">
+            </div>
+            <div class="row">
+                <div class="col-lg-6 mx-auto">
+                    <form>
+                        <div class="mb-3"><input type="text" class="form-control" data-lang-placeholder="contact_form_name" placeholder="您的名字"></div>
+                        <div class="mb-3"><input type="email" class="form-control" data-lang-placeholder="contact_form_email" placeholder="您的邮箱"></div>
+                        <div class="mb-3"><textarea class="form-control" rows="5" data-lang-placeholder="contact_form_message" placeholder="您的消息"></textarea></div>
+                        <div class="d-grid"><button type="submit" class="btn btn-primary" data-lang="contact_form_submit"></button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            // Handle initial page load
-            showSection(window.location.hash);
+    <!-- FAQ Section -->
+    <section id="faq" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="section-heading" data-lang="faq_title"></h2>
+                <hr class="divider">
+            </div>
+            <div class="accordion col-lg-8 mx-auto" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq-heading-1">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-1" aria-expanded="false" aria-controls="faq-collapse-1" data-lang="faq_1_q"></button>
+                    </h2>
+                    <div id="faq-collapse-1" class="accordion-collapse collapse" aria-labelledby="faq-heading-1" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" data-lang="faq_1_a"></div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq-heading-2">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-2" aria-expanded="false" aria-controls="faq-collapse-2" data-lang="faq_2_q"></button>
+                    </h2>
+                    <div id="faq-collapse-2" class="accordion-collapse collapse" aria-labelledby="faq-heading-2" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" data-lang="faq_2_a"></div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq-heading-3">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-3" aria-expanded="false" aria-controls="faq-collapse-3" data-lang="faq_3_q"></button>
+                    </h2>
+                    <div id="faq-collapse-3" class="accordion-collapse collapse" aria-labelledby="faq-heading-3" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" data-lang="faq_3_a"></div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faq-heading-4">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-4" aria-expanded="false" aria-controls="faq-collapse-4" data-lang="faq_4_q"></button>
+                    </h2>
+                    <div id="faq-collapse-4" class="accordion-collapse collapse" aria-labelledby="faq-heading-4" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted" data-lang="faq_4_a"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            // Handle clicks on sidebar links
-            navLinks.forEach(link => {
-                link.addEventListener('click', function (e) {
-                    const href = this.getAttribute('href');
-                    if (href.startsWith('#')) { // Only for internal links
-                        e.preventDefault(); // Prevent default scroll behavior
-                        history.pushState(null, null, href); // Update URL hash without reload
-                        showSection(href);
-                    }
-                    // For external links (like ORCID), default browser behavior will handle opening in new tab
-                });
-            });
+    <!-- Footer -->
+    <footer class="py-4 bg-dark text-white">
+        <div class="container text-center">
+            <small data-lang="footer_copyright"></small>
+        </div>
+    </footer>
 
-            // Handle browser back/forward buttons
-            window.addEventListener('popstate', function () {
-                showSection(window.location.hash);
-            });
-        });
-    </script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="js/lang.js"></script>
 </body>
-
 </html>
