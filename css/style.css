@@ -1,0 +1,139 @@
+:root {
+    --primary-color: #0d6efd;
+    --dark-blue: #0a3d62;
+    --light-gray: #f8f9fa;
+    --text-dark: #212529;
+    --text-light: #6c757d;
+    --border-color: #dee2e6;
+}
+
+body {
+    padding-top: 56px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text-dark);
+}
+
+.navbar-brand {
+    color: var(--dark-blue) !important;
+}
+
+.hero-section {
+    min-height: 90vh;
+    background: linear-gradient(to right, rgba(10, 61, 98, 0.85), rgba(30, 87, 153, 0.7)), url('https://source.unsplash.com/random/1920x1080/?server,data-center,network') no-repeat center center;
+    background-size: cover;
+}
+
+.hero-section h1 {
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.section-heading {
+    color: var(--dark-blue);
+    font-weight: 700;
+}
+
+hr.divider {
+    max-width: 60px;
+    border-width: 3px;
+    border-color: var(--primary-color);
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+}
+
+.py-5 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+}
+
+.bg-light {
+    background-color: var(--light-gray) !important;
+}
+
+/* New Service Pillar Styles */
+.service-pillar-heading {
+    color: var(--dark-blue);
+    font-weight: 600;
+    margin-bottom: 2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.service-item {
+    background: #fff;
+    padding: 25px;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.07);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0,0,0,0.1);
+}
+
+/* Why Us Section */
+#why-us .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#why-us .card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.08) !important;
+}
+
+#why-us i {
+    font-size: 3rem;
+    color: var(--primary-color);
+}
+
+/* Partners Section */
+.partner-logo {
+    height: 60px;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.partner-logo:hover {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+
+/* FAQ Accordion */
+.accordion-item {
+    border-radius: 0.5rem !important;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+.accordion-button {
+    font-weight: 600;
+    color: var(--dark-blue);
+    border-radius: 0.5rem !important;
+}
+.accordion-button:not(.collapsed) {
+    background-color: var(--light-gray);
+    box-shadow: none;
+}
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+footer {
+    background-color: var(--dark-blue) !important;
+}

@@ -1,0 +1,280 @@
+{
+  "zh": {
+    "company_name": "山东智慧互联科技有限公司",
+    "nav_home": "首页",
+    "nav_about": "关于我们",
+    "nav_services": "解决方案",
+    "nav_contact": "联系我们",
+    "hero_title": "构建数字独立的架构",
+    "hero_subtitle": "我们为独特的业务场景（如基础设施扩展、安全合规、软件开发等）提供一站式IT解决方案。",
+    "hero_cta": "获取免费咨询",
+    "about_title": "关于我们",
+    "about_content": "我们是一家由技术专家驱动的创新公司，致力于将人工智能与强大的硬件和网络技术相结合。我们的团队拥有在AI软件、物联网设备和硬件维护方面的深厚背景，为全球客户提供可靠、高效且具有前瞻性的技术服务。",
+    "services_title": "IT 解决方案",
+    "service_pillar_dev": "软件开发",
+    "service_pillar_infra": "基础设施",
+    "service_pillar_security": "安全",
+    "service_pillar_comms": "沟通",
+    "service_pillar_support": "技术支持",
+    "dev_services": [
+      {
+        "title": "企业内部软件开发",
+        "desc": "定制开发符合您独特业务流程的内部管理系统、ERP、CRM等软件。"
+      },
+      {
+        "title": "网站与Web应用开发",
+        "desc": "从企业官网到复杂的Web应用程序，我们提供全栈开发服务。"
+      },
+      {
+        "title": "搜索引擎优化 (SEO)",
+        "desc": "通过技术和内容优化，提升您网站在Google、百度等搜索引擎上的自然排名。"
+      }
+    ],
+    "infra_services": [
+      {
+        "title": "服务器与虚拟化",
+        "desc": "基于 Proxmox, Ceph 等开源技术，提供高性能的服务器虚拟化方案。"
+      },
+      {
+        "title": "云与存储解决方案",
+        "desc": "部署 Nextcloud, TrueNAS 等私有云和网络存储，确保数据安全可控。"
+      },
+      {
+        "title": "高可用性 (HA)",
+        "desc": "为关键业务构建高可用性集群，最大化在线时间。"
+      },
+      {
+        "title": "备份与灾难恢复",
+        "desc": "设计并实施可靠的数据备份与灾难恢复策略。"
+      },
+      {
+        "title": "网络与AP部署",
+        "desc": "专业的网络架构设计、设备安装与AP部署优化，打造稳定高速的办公网络。"
+      }
+    ],
+    "security_services": [
+      {
+        "title": "企业级防火墙",
+        "desc": "基于 IP、端口、协议的精细化访问控制。"
+      },
+      {
+        "title": "VPN 网关",
+        "desc": "支持 OpenVPN, IPsec, WireGuard 等多种协议，保障远程访问安全。"
+      },
+      {
+        "title": "DDoS 防护",
+        "desc": "为您的在线服务提供强大的DDoS攻击缓解能力。"
+      },
+      {
+        "title": "局域网安全检查",
+        "desc": "全面检测内部网络的安全漏洞、配置缺陷，并提供加固建议，防止内部威胁。"
+      },
+      {
+        "title": "访问控制与实时监控",
+        "desc": "集成 pfBlockerNG, Snort, Suricata 等工具，实现主动式威胁检测。"
+      }
+    ],
+    "comms_services": [
+      {
+        "title": "企业邮箱与域名申请",
+        "desc": "提供专业的企业邮箱注册和域名申请服务，提升您的品牌形象。"
+      },
+      {
+        "title": "统一IP电话系统",
+        "desc": "提供 IVR, 呼叫转移等功能，并可集成至CRM。"
+      },
+      {
+        "title": "文件共享与团队聊天",
+        "desc": "构建安全的内部协作平台。"
+      }
+    ],
+    "support_services": [
+      {
+        "title": "AI驱动的服务器管理 (SysOps)",
+        "desc": "利用AI进行主动式监控与维护，优化服务器性能。"
+      },
+      {
+        "title": "监控与警报",
+        "desc": "基于 Zabbix 等工具，提供7x24小时全方位监控与实时警报。"
+      },
+      {
+        "title": "基础设施技术审计",
+        "desc": "全面评估您现有IT系统的性能、安全与合规性。"
+      },
+      {
+        "title": "UPS电源维护与监控",
+        "desc": "提供UPS电池健康检查、更换及实时监控报警服务，保障核心设备电力不中断。"
+      },
+      {
+        "title": "AI增强的硬件维修",
+        "desc": "结合AI诊断应用，提供精准、高效的硬件维修和升级服务。"
+      }
+    ],
+    "why_choose_us_title": "为何选择智慧互联科技？",
+    "feature_1_title": "快速响应",
+    "feature_1_desc": "我们承诺在30分钟内开始处理您的问题，确保核心系统持续在线。",
+    "feature_2_title": "极致透明",
+    "feature_2_desc": "拒绝黑盒操作：您将获得明确的时间表、预算和定期的状态更新。",
+    "feature_3_title": "专家经验",
+    "feature_3_desc": "拥有超过20年行业经验的专业工程师和解决方案架构师团队。",
+    "feature_4_title": "现代安全实践",
+    "feature_4_desc": "采用行业标准和最佳实践，提供DDoS防护、访问控制、防火墙等安全服务。",
+    "partners_title": "合作伙伴与技术栈",
+    "partners_subtitle": "我们与行业领先的品牌合作，并采用成熟可靠的技术为客户创造价值。",
+    "contact_title": "联系我们",
+    "contact_subtitle": "有任何项目想法或疑问？请随时联系我们，我们的专家团队将尽快给您回复。",
+    "contact_form_name": "您的名字",
+    "contact_form_email": "您的邮箱",
+    "contact_form_message": "您的消息",
+    "contact_form_submit": "发送消息",
+    "faq_title": "常见问题解答",
+    "faq_1_q": "什么是IT解决方案公司？",
+    "faq_1_a": "IT解决方案公司为客户设计、实施和支持信息技术系统。典型范围涵盖基础设施（计算、存储、网络）、平台（虚拟化、容器、云）、安全（身份管理、备份、监控）、应用集成和持续的管理服务。",
+    "faq_2_q": "小型企业的最佳IT解决方案是什么？",
+    "faq_2_a": "小型企业的最佳IT解决方案通常是可扩展、经济高效且易于管理的。这可能包括基于云的服务（如Microsoft 365）、强大的网络安全措施、可靠的数据备份策略以及可按需提供的专业IT支持。",
+    "faq_3_q": "IT公司的角色是什么？",
+    "faq_3_a": "IT公司的核心角色是作为企业的技术合作伙伴，帮助企业利用技术实现其业务目标。这包括提供战略建议、管理IT基础设施、确保系统安全、开发定制软件以及在出现问题时提供技术支持。",
+    "faq_4_q": "你们的服务如何保证透明度？",
+    "faq_4_a": "我们通过提供清晰的项目计划、详细的预算报价和定期的进度报告来确保完全的透明度。客户可以随时访问项目管理工具，了解我们工作的每一个环节，绝无任何“黑盒”操作。",
+    "footer_copyright": "© 2025 山东智慧互联科技有限公司. 版权所有。"
+  },
+  "en": {
+    "company_name": "Shandong Smart Connect Technology Co., Ltd.",
+    "nav_home": "Home",
+    "nav_about": "About Us",
+    "nav_services": "Solutions",
+    "nav_contact": "Contact",
+    "hero_title": "Building the Architecture of Digital Independence",
+    "hero_subtitle": "Turnkey IT solutions for unique use cases like infrastructure scaling, security compliance, and software development.",
+    "hero_cta": "Get a Free Consultation",
+    "about_title": "About Us",
+    "about_content": "We are an innovation-driven company powered by tech experts, dedicated to integrating artificial intelligence with robust hardware and network technologies. Our team has a strong background in AI software, IoT devices, and hardware maintenance, delivering reliable, efficient, and forward-thinking tech services to clients worldwide.",
+    "services_title": "IT Solutions",
+    "service_pillar_dev": "Software Development",
+    "service_pillar_infra": "Infrastructure",
+    "service_pillar_security": "Security",
+    "service_pillar_comms": "Communication",
+    "service_pillar_support": "Support",
+    "dev_services": [
+      {
+        "title": "Enterprise Software Development",
+        "desc": "Custom development of internal management systems, ERP, CRM, and other software tailored to your unique business processes."
+      },
+      {
+        "title": "Website & Web App Development",
+        "desc": "From corporate websites to complex web applications, we provide full-stack development services."
+      },
+      {
+        "title": "Search Engine Optimization (SEO)",
+        "desc": "Improve your website's organic ranking on search engines like Google and Baidu through technical and content optimization."
+      }
+    ],
+    "infra_services": [
+      {
+        "title": "Servers and Virtualization",
+        "desc": "High-performance server virtualization solutions based on open-source technologies like Proxmox and Ceph."
+      },
+      {
+        "title": "Cloud and Storage Solutions",
+        "desc": "Deploy private clouds and network storage like Nextcloud and TrueNAS to ensure data security and control."
+      },
+      {
+        "title": "High Availability (HA)",
+        "desc": "Build high-availability clusters for critical services to maximize uptime."
+      },
+      {
+        "title": "Backup and Disaster Recovery",
+        "desc": "Design and implement reliable data backup and disaster recovery strategies."
+      },
+      {
+        "title": "Network & AP Deployment",
+        "desc": "Professional network architecture design, equipment installation, and AP deployment optimization for a stable, high-speed office network."
+      }
+    ],
+    "security_services": [
+      {
+        "title": "Enterprise-grade Firewall",
+        "desc": "Fine-grained access control based on IP, ports, and protocols."
+      },
+      {
+        "title": "VPN Gateway",
+        "desc": "Secure remote access with support for multiple protocols including OpenVPN, IPsec, and WireGuard."
+      },
+      {
+        "title": "DDoS Protection",
+        "desc": "Robust DDoS attack mitigation capabilities for your online services."
+      },
+      {
+        "title": "LAN Security Audit",
+        "desc": "Comprehensive inspection of internal network security vulnerabilities and configuration flaws, with hardening recommendations to prevent insider threats."
+      },
+      {
+        "title": "Access Control & Real-time Monitoring",
+        "desc": "Proactive threat detection by integrating tools like pfBlockerNG, Snort, and Suricata."
+      }
+    ],
+    "comms_services": [
+      {
+        "title": "Business Email & Domain Application",
+        "desc": "Professional business email registration and domain name application services to enhance your brand image."
+      },
+      {
+        "title": "Unified IP Telephony",
+        "desc": "Provides features like IVR, call forwarding, and can be integrated into your CRM."
+      },
+      {
+        "title": "File Sharing & Team Chats",
+        "desc": "Build a secure internal collaboration platform."
+      }
+    ],
+    "support_services": [
+      {
+        "title": "AI-Driven Server Administration (SysOps)",
+        "desc": "Utilize AI for proactive monitoring and maintenance to optimize server performance."
+      },
+      {
+        "title": "Monitoring and Alerts",
+        "desc": "Provide 24/7 comprehensive monitoring and real-time alerts based on tools like Zabbix."
+      },
+      {
+        "title": "Infrastructure Technical Audit",
+        "desc": "A full assessment of your existing IT system's performance, security, and compliance."
+      },
+      {
+        "title": "UPS Power Maintenance & Monitoring",
+        "desc": "Offers UPS battery health checks, replacements, and real-time monitoring alerts to ensure power for critical equipment."
+      },
+      {
+        "title": "AI-Enhanced Hardware Repair",
+        "desc": "Provides precise and efficient hardware repair and upgrade services using AI diagnostic applications."
+      }
+    ],
+    "why_choose_us_title": "Why Choose Smart Connect Technology?",
+    "feature_1_title": "Fast Response Speed",
+    "feature_1_desc": "Up to 30 minutes to start working on your issue, ensuring your most critical systems are always live.",
+    "feature_2_title": "Maximum Transparency",
+    "feature_2_desc": "No black-box approaches: you’ll get clear timelines, budgets, and regular status updates.",
+    "feature_3_title": "Expertise & Experience",
+    "feature_3_desc": "Professional engineers and solution architects with 20+ years of niche IT services experience.",
+    "feature_4_title": "Modern Security Measures",
+    "feature_4_desc": "Using industry standards and best practices for DDoS protection, access control, firewalls, and more.",
+    "partners_title": "Partners & Technologies",
+    "partners_subtitle": "We partner with industry-leading brands and use mature, reliable technologies to create value for our clients.",
+    "contact_title": "Contact Us",
+    "contact_subtitle": "Have a project idea or a question? Feel free to reach out. Our expert team will get back to you as soon as possible.",
+    "contact_form_name": "Your Name",
+    "contact_form_email": "Your Email",
+    "contact_form_message": "Your Message",
+    "contact_form_submit": "Send Message",
+    "faq_title": "Frequently Asked Questions",
+    "faq_1_q": "What is an IT solutions company?",
+    "faq_1_a": "An IT solutions company designs, implements, and supports information-technology systems for clients. Typical scope covers infrastructure (compute, storage, networking), platforms (virtualization, containers, cloud), security (IAM, backups, monitoring), application integration, and ongoing managed services.",
+    "faq_2_q": "What is the best IT solution for a small business?",
+    "faq_2_a": "The best IT solution for a small business is typically scalable, cost-effective, and easy to manage. This might include cloud-based services (like Microsoft 365), robust cybersecurity measures, a reliable data backup strategy, and access to expert IT support on demand.",
+    "faq_3_q": "What is the role of an IT company?",
+    "faq_3_a": "The core role of an IT company is to act as a technology partner, helping businesses leverage technology to achieve their goals. This includes providing strategic advice, managing IT infrastructure, ensuring system security, developing custom software, and offering technical support when issues arise.",
+    "faq_4_q": "How do you ensure transparency in your services?",
+    "faq_4_a": "We ensure complete transparency by providing clear project plans, detailed budget quotes, and regular progress reports. Clients have access to project management tools at all times to see every aspect of our work. There are absolutely no \"black-box\" operations.",
+    "footer_copyright": "© 2025 Shandong Smart Connect Technology Co., Ltd. All Rights Reserved."
+  }
+}
